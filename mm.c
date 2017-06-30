@@ -199,7 +199,7 @@ static void init_page_allocator(unsigned long min, unsigned long max)
         range = r_max - r_min;
 
         /* Free up the memory we've been given to play with. */
-        map_free(PHYS_PFN(r_min), range >> PAGE_SHIFT);
+        map_free(virt_to_pfn(r_min), range >> PAGE_SHIFT);
 
         while ( range != 0 )
         {
