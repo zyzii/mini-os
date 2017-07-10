@@ -164,6 +164,9 @@ endif
 $(OBJ_DIR)/arch/x86/minios-x86%.lds:  arch/x86/minios-x86.lds.S
 	$(CPP) $(ASFLAGS) -P $< -o $@
 
+$(OBJ_DIR)/arch/arm/arm64/minios-$(MINIOS_TARGET_ARCH).lds:  arch/arm/arm64/minios-$(MINIOS_TARGET_ARCH).lds.S
+	$(CPP) $(ASFLAGS) -I $(OBJ_DIR)/include/arm/arm64 -P $< -o $@
+
 $(OBJ_DIR)/$(TARGET): $(OBJS) $(APP_O) arch_lib $(OBJ_DIR)/$(TARGET_ARCH_DIR)/minios-$(MINIOS_TARGET_ARCH).lds
 	$(LD) -r $(LDFLAGS) $(HEAD_OBJ) $(APP_O) $(OBJS) $(LDARCHLIB) $(LDLIBS) -o $@.o
 	$(OBJCOPY) -w -G $(GLOBAL_PREFIX)* -G _start $@.o $@.o
