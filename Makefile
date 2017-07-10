@@ -24,7 +24,7 @@ include minios.mk
 LDLIBS := 
 APP_LDLIBS := 
 LDARCHLIB := -L$(OBJ_DIR)/$(TARGET_ARCH_DIR) -l$(ARCH_LIB_NAME)
-LDFLAGS_FINAL := -T $(OBJ_DIR)/$(TARGET_ARCH_DIR)/minios-$(MINIOS_TARGET_ARCH).lds $(ARCH_LDFLAGS_FINAL)
+LDFLAGS_FINAL := -T $(ARCH_LDFLAGS_FINAL)
 
 # Prefix for global API names. All other symbols are localised before
 # linking with EXTRA_OBJS.
@@ -161,11 +161,21 @@ ifneq ($(APP_OBJS),)
 APP_O=$(OBJ_DIR)/$(TARGET)_app.o 
 endif
 
+ifeq ($(MINIOS_TARGET_ARCH),arm64)
+LINK_FILE=$(OBJ_DIR)/$(TARGET_ARCH_DIR)/arm64/minios-$(MINIOS_TARGET_ARCH).lds
+else
+LINK_FILE=$(OBJ_DIR)/$(TARGET_ARCH_DIR)/minios-$(MINIOS_TARGET_ARCH).lds
+endif
+LDFLAGS_FINAL += $(LINK_FILE)
+
 # Special rule for x86 for now
 $(OBJ_DIR)/arch/x86/minios-x86%.lds:  arch/x86/minios-x86.lds.S
 	$(CPP) $(ASFLAGS) -P $< -o $@
 
-$(OBJ_DIR)/$(TARGET): $(OBJS) $(APP_O) arch_lib $(OBJ_DIR)/$(TARGET_ARCH_DIR)/minios-$(MINIOS_TARGET_ARCH).lds
+$(OBJ_DIR)/arch/arm/arm64/minios-$(MINIOS_TARGET_ARCH).lds:  arch/arm/arm64/minios-$(MINIOS_TARGET_ARCH).lds.S
+	$(CPP) $(ASFLAGS) -I $(OBJ_DIR)/include/arm/ -P $< -o $@
+
+$(OBJ_DIR)/$(TARGET): $(OBJS) $(APP_O) arch_lib $(LINK_FILE)
 	$(LD) -r $(LDFLAGS) $(HEAD_OBJ) $(APP_O) $(OBJS) $(LDARCHLIB) $(LDLIBS) -o $@.o
 	$(OBJCOPY) -w -G $(GLOBAL_PREFIX)* -G _start $@.o $@.o
 	$(LD) $(LDFLAGS) $(LDFLAGS_FINAL) $@.o $(EXTRA_OBJS) -o $@
