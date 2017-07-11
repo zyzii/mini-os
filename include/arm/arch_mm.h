@@ -12,17 +12,15 @@ extern uint32_t physical_address_offset;	/* Add this to a virtual address to get
 #define PAGE_SIZE        (1 << PAGE_SHIFT)
 #define PAGE_MASK       (~(PAGE_SIZE-1))
 
-#define L1_PAGETABLE_SHIFT      12
-
 #define L1_PROT          0
 
 #define to_phys(x)                 (((paddr_t)(x)+physical_address_offset) & 0xffffffff)
 #define to_virt(x)                 ((void *)(((x)-physical_address_offset) & 0xffffffff))
 
-#define PFN_UP(x)    (unsigned long)(((x) + PAGE_SIZE-1) >> L1_PAGETABLE_SHIFT)
-#define PFN_DOWN(x)    (unsigned long)((x) >> L1_PAGETABLE_SHIFT)
-#define PFN_PHYS(x)    ((uint64_t)(x) << L1_PAGETABLE_SHIFT)
-#define PHYS_PFN(x)    (unsigned long)((x) >> L1_PAGETABLE_SHIFT)
+#define PFN_UP(x)                  (unsigned long)(((x) + PAGE_SIZE-1) >> PAGE_SHIFT)
+#define PFN_DOWN(x)                (unsigned long)((x) >> PAGE_SHIFT)
+#define PFN_PHYS(x)                ((uint64_t)(x) << PAGE_SHIFT)
+#define PHYS_PFN(x)                (unsigned long)((x) >> PAGE_SHIFT)
 
 #define virt_to_pfn(_virt)         (PFN_DOWN(to_phys(_virt)))
 #define virt_to_mfn(_virt)         (PFN_DOWN(to_phys(_virt)))
