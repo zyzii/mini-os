@@ -37,7 +37,15 @@
 #define _LIB_CONSOLE_H_
 
 #include <mini-os/os.h>
+
+#if defined(__arm__)
+#include <mini-os/arm32/traps.h>
+#elif defined(__aarch64__)
+#include <mini-os/arm64/traps.h>
+#else
 #include <mini-os/traps.h>
+#endif
+
 #include <mini-os/types.h>
 #include <xen/grant_table.h>
 #include <xenbus.h>

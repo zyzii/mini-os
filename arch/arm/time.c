@@ -1,7 +1,13 @@
 #include <mini-os/os.h>
 #include <mini-os/hypervisor.h>
 #include <mini-os/events.h>
-#include <mini-os/traps.h>
+
+#if defined(__arm__)
+#include <mini-os/arm32/traps.h>
+#else
+#include <mini-os/arm64/traps.h>
+#endif
+
 #include <mini-os/types.h>
 #include <mini-os/time.h>
 #include <mini-os/lib.h>

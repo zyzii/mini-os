@@ -24,7 +24,14 @@
 #error "Unsupported architecture"
 #endif
 #include <xen/hvm/hvm_op.h>
+
+#if defined(__arm__)
+#include <mini-os/arm32/traps.h>
+#elif defined(__aarch64__)
+#include <mini-os/arm64/traps.h>
+#else
 #include <mini-os/traps.h>
+#endif
 
 /* hypervisor.c */
 #ifdef CONFIG_PARAVIRT
