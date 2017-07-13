@@ -18,7 +18,15 @@
 #include <inttypes.h>
 #include <mini-os/os.h>
 #include <mini-os/mm.h>
+
+#if defined(__arm__)
+#include <mini-os/arm32/traps.h>
+#elif defined(__aarch64__)
+#include <mini-os/arm64/traps.h>
+#else
 #include <mini-os/traps.h>
+#endif
+
 #include <mini-os/lib.h>
 #include <mini-os/xenbus.h>
 #include <mini-os/events.h>

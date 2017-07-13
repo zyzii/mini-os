@@ -19,7 +19,14 @@
 #ifndef _EVENTS_H_
 #define _EVENTS_H_
 
-#include<mini-os/traps.h>
+#if defined(__arm__)
+#include <mini-os/arm32/traps.h>
+#elif defined(__aarch64__)
+#include <mini-os/arm64/traps.h>
+#else
+#include <mini-os/traps.h>
+#endif
+
 #include<xen/event_channel.h>
 
 typedef void (*evtchn_handler_t)(evtchn_port_t, struct pt_regs *, void *);
