@@ -105,6 +105,11 @@ ENTRY(_start)
     msr     ttbr0_el1, x5
     isb
 
+    /* Load the exception vectors */
+    ldr     x2, =vector_table
+    msr     vbar_el1, x2
+    isb
+
     /* Turning on MMU */
     tlbi    vmalle1
     dsb     nsh
@@ -305,3 +310,152 @@ ENTRY(_setup_idmap_pgtable)
     dsb     sy
     ret
 ENDPROC(_setup_idmap_pgtable)
+
+/* please refer to struct pt_regs{} in traps.h */
+#define FRAME_SIZE 272
+
+    .macro trap_entry, el
+    sub   sp, sp, #FRAME_SIZE
+    stp   x0, x1, [sp, #16 * 0]
+    stp   x2, x3, [sp, #16 * 1]
+    stp   x4, x5, [sp, #16 * 2]
+    stp   x6, x7, [sp, #16 * 3]
+    stp   x8, x9, [sp, #16 * 4]
+    stp   x10, x11, [sp, #16 * 5]
+    stp   x12, x13, [sp, #16 * 6]
+    stp   x14, x15, [sp, #16 * 7]
+    stp   x16, x17, [sp, #16 * 8]
+    stp   x18, x19, [sp, #16 * 9]
+    stp   x20, x21, [sp, #16 * 10]
+    stp   x22, x23, [sp, #16 * 11]
+    stp   x24, x25, [sp, #16 * 12]
+    stp   x26, x27, [sp, #16 * 13]
+    stp   x28, x29, [sp, #16 * 14]
+
+    .if     \el == 0
+    mrs     x21, sp_el0
+    .else
+    add     x21, sp, #FRAME_SIZE
+    .endif
+
+    stp     x30, x21, [sp, #16 * 15]
+
+    mrs     x22, elr_el1
+    mrs     x23, spsr_el1
+    stp     x22, x23, [sp, #16 * 16]
+    .endm
+
+    .macro trap_exit, el
+    ldp   x22, x23, [sp, #16 * 16]
+
+    /* restore the elr and spsr */
+    msr   elr_el1, x22
+    msr   spsr_el1, x23
+
+    /* restore the lr(x30) and sp_el0 */
+    ldp   x30, x21, [sp, #16 * 15]
+
+    .if     \el == 0
+    msr     sp_el0, x21
+    .endif
+
+    ldp   x0, x1, [sp, #16 * 0]
+    ldp   x2, x3, [sp, #16 * 1]
+    ldp   x4, x5, [sp, #16 * 2]
+    ldp   x6, x7, [sp, #16 * 3]
+    ldp   x8, x9, [sp, #16 * 4]
+    ldp   x10, x11, [sp, #16 * 5]
+    ldp   x12, x13, [sp, #16 * 6]
+    ldp   x14, x15, [sp, #16 * 7]
+    ldp   x16, x17, [sp, #16 * 8]
+    ldp   x18, x19, [sp, #16 * 9]
+    ldp   x20, x21, [sp, #16 * 10]
+    ldp   x22, x23, [sp, #16 * 11]
+    ldp   x24, x25, [sp, #16 * 12]
+    ldp   x26, x27, [sp, #16 * 13]
+    ldp   x28, x29, [sp, #16 * 14]
+
+    add     sp, sp, #FRAME_SIZE
+    eret
+    .endm
+
+    .globl IRQ_handler
+IRQ_handler:
+    .long 0x0
+
+    .align 6
+el1_sync:
+    trap_entry 1
+    mov     x0, sp
+    mrs     x1, esr_el1;
+    mrs     x2, far_el1;
+    bl      do_sync
+    trap_exit 1
+ENDPROC(el1_sync)
+
+    .align 6
+el1_irq:
+    trap_entry 1
+    ldr     x0, IRQ_handler
+    blr     x0
+    trap_exit 1
+ENDPROC(el1_irq)
+
+    /* Exception vector entry */
+    .macro vector_entry label
+    .align  7
+    b       \label
+    .endm
+
+    .align  11
+ENTRY(vector_table)
+    /* Current Exception level with SP_EL0 */
+    vector_entry el1_sync_invalid         /* Synchronous EL1t       */
+    vector_entry el1_irq_invalid          /* IRQ EL1t               */
+    vector_entry el1_fiq_invalid          /* FIQ EL1t               */
+    vector_entry el1_error_invalid        /* Error EL1t             */
+
+    /* Current Executable level with SP_EL1 */
+    vector_entry el1_sync                 /* Synchronous EL1h       */
+    vector_entry el1_irq                  /* IRQ EL1h               */
+    vector_entry el1_fiq_invalid          /* FIQ EL1h               */
+    vector_entry el1_error_invalid        /* Error EL1h             */
+
+    /* Lower Executable level using AArch64 */
+    vector_entry el0_sync_invalid         /* Synchronous 64-bit EL0 */
+    vector_entry el0_irq_invalid          /* IRQ 64-bit EL0         */
+    vector_entry el0_fiq_invalid          /* FIQ 64-bit EL0         */
+    vector_entry el0_error_invalid        /* Error 64-bit EL0       */
+
+    /* Lower Executable level using AArch32 */
+    vector_entry el0_sync_invalid         /* Synchronous 32-bit EL0 */
+    vector_entry el0_irq_invalid          /* IRQ 32-bit EL0         */
+    vector_entry el0_fiq_invalid          /* FIQ 32-bit EL0         */
+    vector_entry el0_error_invalid        /* Error 32-bit EL0       */
+END(vector_table)
+
+/* Bad Abort numbers */
+#define BAD_SYNC    0
+#define BAD_IRQ     1
+#define BAD_FIQ     2
+#define BAD_ERROR   3
+
+#define el_invalid(name, reason, el)  \
+    .align 6;                         \
+name##_invalid:                       \
+    trap_entry  el;                   \
+    mov     x0, sp;                   \
+    mov     x1, #(reason);            \
+    mrs     x2, esr_el1;              \
+    mrs     x3, far_el1;              \
+    b       do_bad_mode;              \
+ENDPROC(name##_invalid);              \
+
+el_invalid(el1_sync, BAD_SYNC, 1);
+el_invalid(el0_sync, BAD_SYNC, 0);
+el_invalid(el1_irq, BAD_IRQ, 1);
+el_invalid(el0_irq, BAD_IRQ, 0);
+el_invalid(el1_fiq, BAD_FIQ, 1);
+el_invalid(el0_fiq, BAD_FIQ, 0);
+el_invalid(el1_error, BAD_ERROR, 1);
+el_invalid(el0_error, BAD_ERROR, 0);
