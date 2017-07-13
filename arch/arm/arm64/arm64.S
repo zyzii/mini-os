@@ -1,6 +1,7 @@
 #include "asm.h"
 #include <arch_limits.h>
 #include <arm64/pagetable.h>
+#include <arm64/traps.h>
 #include <xen/xen.h>
 
 /* This macro will use the x0/x1/x2/x16 */
@@ -99,6 +100,11 @@ ENTRY(_start)
     /* Load TTBRx */
     msr     ttbr1_el1, x19
     msr     ttbr0_el1, x0
+    isb
+
+    /* Load the exception vectors */
+    ldr     x2, =vector_table
+    msr     vbar_el1, x2
     isb
 
     /* Turning on MMU */
@@ -284,3 +290,144 @@ _setup_idmap_pgtable:
     adr     x0, idmap_l0_pgtable
     dsb     sy
     ret
+
+/* The save_registers/restore_registers are based on the code in FreeBSD */
+.macro	save_registers el
+	mov	x18, sp
+
+	sub	sp, sp, #(PT_REG_SIZE)
+
+	stp	x28, x29, [sp, #(PT_REG_X + 28 * 8)]
+	stp	x26, x27, [sp, #(PT_REG_X + 26 * 8)]
+	stp	x24, x25, [sp, #(PT_REG_X + 24 * 8)]
+	stp	x22, x23, [sp, #(PT_REG_X + 22 * 8)]
+	stp	x20, x21, [sp, #(PT_REG_X + 20 * 8)]
+	stp	x18, x19, [sp, #(PT_REG_X + 18 * 8)]
+	stp	x16, x17, [sp, #(PT_REG_X + 16 * 8)]
+	stp	x14, x15, [sp, #(PT_REG_X + 14 * 8)]
+	stp	x12, x13, [sp, #(PT_REG_X + 12 * 8)]
+	stp	x10, x11, [sp, #(PT_REG_X + 10 * 8)]
+	stp	x8,  x9,  [sp, #(PT_REG_X + 8  * 8)]
+	stp	x6,  x7,  [sp, #(PT_REG_X + 6  * 8)]
+	stp	x4,  x5,  [sp, #(PT_REG_X + 4  * 8)]
+	stp	x2,  x3,  [sp, #(PT_REG_X + 2  * 8)]
+	stp	x0,  x1,  [sp, #(PT_REG_X + 0  * 8)]
+
+	mrs	x10, elr_el1
+	mrs	x11, spsr_el1
+	mrs	x12, esr_el1
+.if \el == 0
+	mrs	x18, sp_el0
+.endif
+	str	x10, [sp, #(PT_REG_ELR)]
+	stp	w11, w12, [sp, #(PT_REG_SPSR)]
+	stp	x18, x30, [sp, #(PT_REG_SP)]
+.endm
+
+.macro	restore_registers el
+	ldp	x18, x30, [sp, #(PT_REG_SP)]
+	ldp	x10, x11, [sp, #(PT_REG_ELR)]
+.if \el == 0
+	msr	sp_el0, x18
+.endif
+	msr	spsr_el1, x11
+	msr	elr_el1, x10
+
+	ldp	x0,  x1,  [sp, #(PT_REG_X + 0  * 8)]
+	ldp	x2,  x3,  [sp, #(PT_REG_X + 2  * 8)]
+	ldp	x4,  x5,  [sp, #(PT_REG_X + 4  * 8)]
+	ldp	x6,  x7,  [sp, #(PT_REG_X + 6  * 8)]
+	ldp	x8,  x9,  [sp, #(PT_REG_X + 8  * 8)]
+	ldp	x10, x11, [sp, #(PT_REG_X + 10 * 8)]
+	ldp	x12, x13, [sp, #(PT_REG_X + 12 * 8)]
+	ldp	x14, x15, [sp, #(PT_REG_X + 14 * 8)]
+	ldp	x16, x17, [sp, #(PT_REG_X + 16 * 8)]
+	ldp	x18, x19, [sp, #(PT_REG_X + 18 * 8)]
+	ldp	x20, x21, [sp, #(PT_REG_X + 20 * 8)]
+	ldp	x22, x23, [sp, #(PT_REG_X + 22 * 8)]
+	ldp	x24, x25, [sp, #(PT_REG_X + 24 * 8)]
+	ldp	x26, x27, [sp, #(PT_REG_X + 26 * 8)]
+	ldp	x28, x29, [sp, #(PT_REG_X + 28 * 8)]
+
+	mov	sp, x18
+        eret
+.endm
+
+    .globl IRQ_handler
+IRQ_handler:
+    .long 0x0
+
+    .align 6
+el1_sync:
+    save_registers 1
+    mov     x0, sp
+    mrs     x1, esr_el1;
+    mrs     x2, far_el1;
+    bl      do_sync
+    restore_registers 1
+
+    .align 6
+el1_irq:
+    save_registers 1
+    ldr     x0, IRQ_handler
+    blr     x0
+    restore_registers 1
+
+/* Bad Abort numbers */
+#define BAD_SYNC    0
+#define BAD_IRQ     1
+#define BAD_FIQ     2
+#define BAD_ERROR   3
+
+#define el_invalid(name, reason, el)  \
+    .align 6;                         \
+name##_invalid:                       \
+    save_registers  el;               \
+    mov     x0, sp;                   \
+    mov     x1, #(reason);            \
+    mrs     x2, esr_el1;              \
+    mrs     x3, far_el1;              \
+    b       do_bad_mode;              \
+ENDPROC(name##_invalid);              \
+
+el_invalid(el1_sync, BAD_SYNC, 1);
+el_invalid(el0_sync, BAD_SYNC, 0);
+el_invalid(el1_irq, BAD_IRQ, 1);
+el_invalid(el0_irq, BAD_IRQ, 0);
+el_invalid(el1_fiq, BAD_FIQ, 1);
+el_invalid(el0_fiq, BAD_FIQ, 0);
+el_invalid(el1_error, BAD_ERROR, 1);
+el_invalid(el0_error, BAD_ERROR, 0);
+
+    /* Exception vector entry */
+    .macro vector_entry label
+    .align  7
+    b       \label
+    .endm
+
+    .align  11
+ENTRY(vector_table)
+    /* Current Exception level with SP_EL0 */
+    vector_entry el1_sync_invalid         /* Synchronous EL1t       */
+    vector_entry el1_irq_invalid          /* IRQ EL1t               */
+    vector_entry el1_fiq_invalid          /* FIQ EL1t               */
+    vector_entry el1_error_invalid        /* Error EL1t             */
+
+    /* Current Exception level with SP_EL1 */
+    vector_entry el1_sync                 /* Synchronous EL1h       */
+    vector_entry el1_irq                  /* IRQ EL1h               */
+    vector_entry el1_fiq_invalid          /* FIQ EL1h               */
+    vector_entry el1_error_invalid        /* Error EL1h             */
+
+    /* Lower Exception level using AArch64 */
+    vector_entry el0_sync_invalid         /* Synchronous 64-bit EL0 */
+    vector_entry el0_irq_invalid          /* IRQ 64-bit EL0         */
+    vector_entry el0_fiq_invalid          /* FIQ 64-bit EL0         */
+    vector_entry el0_error_invalid        /* Error 64-bit EL0       */
+
+    /* Lower Exception level using AArch32 */
+    vector_entry el0_sync_invalid         /* Synchronous 32-bit EL0 */
+    vector_entry el0_irq_invalid          /* IRQ 32-bit EL0         */
+    vector_entry el0_fiq_invalid          /* FIQ 32-bit EL0         */
+    vector_entry el0_error_invalid        /* Error 32-bit EL0       */
+END(vector_table)
