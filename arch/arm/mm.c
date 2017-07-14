@@ -3,18 +3,20 @@
 #include <arch_mm.h>
 #include <mini-os/errno.h>
 #include <mini-os/hypervisor.h>
+#include <mini-os/posix/limits.h>
 #include <libfdt.h>
 #include <lib.h>
 
 paddr_t physical_address_offset;
-struct e820entry e820_map[1] = {
-    {
-        .addr = 0,
-        .size = ULONG_MAX - 1,
-        .type = E820_RAM
-    }
-};
-unsigned e820_entries = 1;
+
+unsigned mem_blocks = 1;
+
+int arch_check_mem_block(int index, unsigned long *r_min, unsigned long *r_max)
+{
+    *r_min = 0;
+    *r_max = ULONG_MAX - 1;
+    return 0;
+}
 
 unsigned long allocate_ondemand(unsigned long n, unsigned long alignment)
 {

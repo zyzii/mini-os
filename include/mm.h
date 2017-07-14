@@ -87,4 +87,7 @@ extern unsigned long heap, brk, heap_mapped, heap_end;
 int free_physical_pages(xen_pfn_t *mfns, int n);
 void fini_mm(void);
 
+extern unsigned int mem_blocks;
+extern int arch_check_mem_block(int index, unsigned long *r_min,
+                                unsigned long *r_max);
 #endif /* _MM_H_ */
