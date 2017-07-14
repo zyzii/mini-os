@@ -128,7 +128,8 @@ void init_time(void)
 
     __asm__ __volatile__("mrc p15, 0, %0, c14, c0, 0":"=r"(counter_freq));
     cntvct_at_init = read_virtual_count();
-    printk("Virtual Count register is %llx, freq = %d Hz\n", cntvct_at_init, counter_freq);
+    printk("Virtual Count register is %llx, freq = %d Hz\n",
+           (unsigned long long) cntvct_at_init, counter_freq);
 }
 
 void fini_time(void)
