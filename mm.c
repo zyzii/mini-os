@@ -43,7 +43,6 @@
 #include <mini-os/types.h>
 #include <mini-os/lib.h>
 #include <mini-os/xmalloc.h>
-#include <mini-os/e820.h>
 
 /*********************
  * ALLOCATION BITMAP
@@ -175,15 +174,11 @@ static void init_page_allocator(unsigned long min, unsigned long max)
     /* All allocated by default. */
     memset(mm_alloc_bitmap, ~0, mm_alloc_bitmap_size);
 
-    for ( m = 0; m < e820_entries; m++ )
+    for ( m = 0; m < mem_blocks; m++ )
     {
-        if ( e820_map[m].type != E820_RAM )
+        if (arch_check_mem_block(m, &r_min, &r_max))
             continue;
-        if ( e820_map[m].addr + e820_map[m].size >= ULONG_MAX )
-            BUG();
 
-        r_min = e820_map[m].addr;
-        r_max = r_min + e820_map[m].size;
         if ( r_max <= min || r_min >= max )
             continue;
         if ( r_min < min )
