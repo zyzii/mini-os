@@ -58,9 +58,15 @@ static struct timespec shadow_ts;
 
 static inline uint64_t read_virtual_count(void)
 {
+#if defined(__arm__)
     uint32_t c_lo, c_hi;
     __asm__ __volatile__("mrrc p15, 1, %0, %1, c14":"=r"(c_lo), "=r"(c_hi));
     return (((uint64_t) c_hi) << 32) + c_lo;
+#elif defined(__aarch64__)
+    uint64_t c;
+    __asm__ __volatile__("mrs %0, cntvct_el0":"=r"(c));
+    return c;
+#endif
 }
 
 /* monotonic_clock(): returns # of nanoseconds passed since time_init()
@@ -86,16 +92,24 @@ int gettimeofday(struct timeval *tv, void *tz)
 
 /* Set the timer and mask. */
 void write_timer_ctl(uint32_t value) {
+#if defined(__arm__)
     __asm__ __volatile__(
             "mcr p15, 0, %0, c14, c3, 1\n"
             "isb"::"r"(value));
+#elif defined(__aarch64__)
+    __asm__ __volatile__("msr cntv_ctl_el0, %0" : : "r" (value));
+#endif
 }
 
 void set_vtimer_compare(uint64_t value) {
     DEBUG("New CompareValue : %llx\n", value);
 
+#if defined(__arm__)
     __asm__ __volatile__("mcrr p15, 3, %0, %H0, c14"
             ::"r"(value));
+#elif defined(__aarch64__)
+    __asm__ __volatile__("msr cntv_cval_el0, %0" : : "r" (value));
+#endif
 
     /* Enable timer and unmask the output signal */
     write_timer_ctl(1);
