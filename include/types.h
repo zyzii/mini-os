@@ -30,7 +30,7 @@ typedef unsigned long       u_long;
 #if defined(__i386__) || defined(__arm__)
 typedef long long           quad_t;
 typedef unsigned long long  u_quad_t;
-#elif defined(__x86_64__)
+#elif defined(__x86_64__) || defined(__aarch64__)
 typedef long                quad_t;
 typedef unsigned long       u_quad_t;
 #endif /* __i386__ || __x86_64__ */
