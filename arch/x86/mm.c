@@ -71,7 +71,7 @@ struct e820entry e820_map[1] = {
         .type = E820_RAM
     }
 };
-unsigned e820_entries = 1;
+unsigned mem_blocks = 1;
 
 void arch_mm_preinit(void *p)
 {
@@ -113,7 +113,7 @@ desc_ptr idt_ptr =
 };
 
 struct e820entry e820_map[E820_MAX];
-unsigned e820_entries;
+unsigned mem_blocks;
 
 static char *e820_types[E820_TYPES] = {
     [E820_RAM]      = "RAM",
@@ -150,9 +150,9 @@ void arch_mm_preinit(void *p)
         xprintk("could not get memory map\n");
         do_exit();
     }
-    e820_entries = memmap.nr_entries;
+    mem_blocks = memmap.nr_entries;
 
-    for ( i = 0; i < e820_entries; i++ )
+    for ( i = 0; i < mem_blocks; i++ )
     {
         if ( e820_map[i].type != E820_RAM )
             continue;
@@ -173,7 +173,7 @@ void arch_print_memmap(void)
     char buf[12];
 
     printk("Memory map:\n");
-    for ( i = 0; i < e820_entries; i++ )
+    for ( i = 0; i < mem_blocks; i++ )
     {
         if ( e820_map[i].type >= E820_TYPES || !e820_types[e820_map[i].type] )
         {
@@ -190,6 +190,18 @@ void arch_print_memmap(void)
     }
 }
 #endif
+
+int arch_check_mem_block(int index, unsigned long *r_min, unsigned long *r_max)
+{
+    if (e820_map[index].type != E820_RAM)
+        return 1;
+    if (e820_map[index].addr + e820_map[index].size >= ULONG_MAX)
+        BUG();
+
+    *r_min = e820_map[index].addr;
+    *r_max = *r_min + e820_map[index].size;
+    return 0;
+}
 
 /*
  * Make pt_pfn a new 'level' page table frame and hook it into the page
