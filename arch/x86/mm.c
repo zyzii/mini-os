@@ -71,7 +71,7 @@ struct e820entry e820_map[1] = {
         .type = E820_RAM
     }
 };
-unsigned e820_entries = 1;
+unsigned mem_blocks = 1;
 
 void arch_mm_preinit(void *p)
 {
@@ -113,7 +113,8 @@ desc_ptr idt_ptr =
 };
 
 struct e820entry e820_map[E820_MAX];
-unsigned e820_entries;
+unsigned mem_blocks;
+#define e820_entries mem_blocks;
 
 static char *e820_types[E820_TYPES] = {
     [E820_RAM]      = "RAM",
@@ -190,6 +191,18 @@ void arch_print_memmap(void)
     }
 }
 #endif
+
+int arch_check_mem_block(int index, unsigned long *r_min, unsigned long *r_max)
+{
+    if (e820_map[index].type != E820_RAM)
+        return 1;
+    if (e820_map[index].addr + e820_map[index].size >= ULONG_MAX)
+        BUG();
+
+    *r_min = e820_map[index].addr;
+    *r_max = *r_min + e820_map[index].size;
+    return 0;
+}
 
 /*
  * Make pt_pfn a new 'level' page table frame and hook it into the page
