@@ -22,27 +22,11 @@ extern void *device_tree;
 
 extern shared_info_t *HYPERVISOR_shared_info;
 
-// disable interrupts
-static inline void local_irq_disable(void) {
-    __asm__ __volatile__("cpsid i":::"memory");
-}
-
-// enable interrupts
-static inline void local_irq_enable(void) {
-    __asm__ __volatile__("cpsie i":::"memory");
-}
-
-#define local_irq_save(x) { \
-    __asm__ __volatile__("mrs %0, cpsr;cpsid i":"=r"(x)::"memory");    \
-}
-
-#define local_irq_restore(x) {    \
-    __asm__ __volatile__("msr cpsr_c, %0"::"r"(x):"memory");    \
-}
-
-#define local_save_flags(x)    { \
-    __asm__ __volatile__("mrs %0, cpsr":"=r"(x)::"memory");    \
-}
+#if defined(__arm__)
+#include <arm32/os.h>
+#elif defined(__aarch64__)
+#include <arm64/os.h>
+#endif
 
 static inline int irqs_disabled(void) {
     int x;
@@ -50,14 +34,7 @@ static inline int irqs_disabled(void) {
     return x & 0x80;
 }
 
-/* We probably only need "dmb" here, but we'll start by being paranoid. */
-#define mb() __asm__("dsb":::"memory");
-#define rmb() __asm__("dsb":::"memory");
-#define wmb() __asm__("dsb":::"memory");
-
-/************************** arm *******************************/
 #ifdef __INSIDE_MINIOS__
-#if defined (__arm__)
 #define xchg(ptr,v) __atomic_exchange_n(ptr, v, __ATOMIC_SEQ_CST)
 
 /**
@@ -121,39 +98,11 @@ static __inline__ void clear_bit(int nr, volatile unsigned long *addr)
     test_and_clear_bit(nr, addr);
 }
 
-/**
- * __ffs - find first (lowest) set bit in word.
- * @word: The word to search
- *
- * Undefined if no bit exists, so code should check against 0 first.
- */
-static __inline__ unsigned long __ffs(unsigned long word)
+static inline unsigned long __ffs(unsigned long word)
 {
-    int clz;
-
-    /* xxxxx10000 = word
-     * xxxxx01111 = word - 1
-     * 0000011111 = word ^ (word - 1)
-     *      4     = 31 - clz(word ^ (word - 1))
-     */
-
-    __asm__ (
-        "sub r0, %[word], #1\n"
-        "eor r0, r0, %[word]\n"
-        "clz %[clz], r0\n":
-        /* Outputs: */
-        [clz] "=r"(clz):
-        /* Inputs: */
-        [word] "r"(word):
-        /* Clobbers: */
-        "r0");
-
-    return 31 - clz;
+	return __builtin_ctzl(word);
 }
 
-#else /* ifdef __arm__ */
-#error "Unsupported architecture"
-#endif
 #endif /* ifdef __INSIDE_MINIOS */
 
 /********************* common arm32 and arm64  ****************************/
