@@ -29,13 +29,18 @@ void arch_init_mm(unsigned long *start_pfn_p, unsigned long *max_pfn_p)
     int prop_len = 0;
     const uint64_t *regs;
     uintptr_t end;
+    paddr_t mem_base;
+    uint64_t mem_size;
+    uint64_t heap_len;
+    uint32_t fdt_size;
+    void *new_device_tree;
 
-    printk("    _text: %p(VA)\n", &_text);
-    printk("    _etext: %p(VA)\n", &_etext);
-    printk("    _erodata: %p(VA)\n", &_erodata);
-    printk("    _edata: %p(VA)\n", &_edata);
+    printk("    _text:       %p(VA)\n", &_text);
+    printk("    _etext:      %p(VA)\n", &_etext);
+    printk("    _erodata:    %p(VA)\n", &_erodata);
+    printk("    _edata:      %p(VA)\n", &_edata);
     printk("    stack start: %p(VA)\n", _boot_stack);
-    printk("    _end: %p(VA)\n", &_end);
+    printk("    _end:        %p(VA)\n", &_end);
 
     if (fdt_num_mem_rsv(device_tree) != 0)
         printk("WARNING: reserved memory not supported!\n");
@@ -58,14 +63,14 @@ void arch_init_mm(unsigned long *start_pfn_p, unsigned long *max_pfn_p)
     }
 
     end = (uintptr_t) &_end;
-    paddr_t mem_base = fdt64_to_cpu(regs[0]);
-    uint64_t mem_size = fdt64_to_cpu(regs[1]);
+    mem_base = fdt64_to_cpu(regs[0]);
+    mem_size = fdt64_to_cpu(regs[1]);
     printk("Found memory at 0x%llx (len 0x%llx)\n",
             (unsigned long long) mem_base, (unsigned long long) mem_size);
 
     BUG_ON(to_virt(mem_base) > (void *) &_text);          /* Our image isn't in our RAM! */
     *start_pfn_p = PFN_UP(to_phys(end));
-    uint64_t heap_len = mem_size - (PFN_PHYS(*start_pfn_p) - mem_base);
+    heap_len = mem_size - (PFN_PHYS(*start_pfn_p) - mem_base);
     *max_pfn_p = *start_pfn_p + PFN_DOWN(heap_len);
 
     printk("Using pages %lu to %lu as free space for heap.\n", *start_pfn_p, *max_pfn_p);
@@ -73,8 +78,8 @@ void arch_init_mm(unsigned long *start_pfn_p, unsigned long *max_pfn_p)
     /* The device tree is probably in memory that we're about to hand over to the page
      * allocator, so move it to the end and reserve that space.
      */
-    uint32_t fdt_size = fdt_totalsize(device_tree);
-    void *new_device_tree = to_virt(((*max_pfn_p << PAGE_SHIFT) - fdt_size) & PAGE_MASK);
+    fdt_size = fdt_totalsize(device_tree);
+    new_device_tree = to_virt(((*max_pfn_p << PAGE_SHIFT) - fdt_size) & PAGE_MASK);
     if (new_device_tree != device_tree) {
         memmove(new_device_tree, device_tree, fdt_size);
     }
