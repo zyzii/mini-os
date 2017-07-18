@@ -3,6 +3,10 @@
 
 typedef uint64_t paddr_t;
 #define PRIpaddr "lx"
+#define MIN_MEM_SIZE            (0x400000)
+#define MAX_MEM_SIZE            (1UL << 39)
+
+typedef uint64_t lpae_t;
 
 extern char _text, _etext, _erodata, _edata, _end, __bss_start;
 extern int _boot_stack[];
@@ -30,6 +34,7 @@ extern paddr_t physical_address_offset;
 
 #define virtual_to_mfn(_virt)	   virt_to_mfn(_virt)
 
+void arch_mm_preinit(void *dtb_pointer);
 // FIXME
 #define map_frames(f, n) (NULL)
 
