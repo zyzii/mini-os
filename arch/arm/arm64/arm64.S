@@ -232,6 +232,9 @@ _setup_initial_pgtable:
     ldr     x0, =_text                 /* x0 := vaddr(_text)            */
     ldr     x1, =_end                  /* x1 := vaddr(_end)             */
 
+    /* Map extra 2M for first_free_pfn */
+    add     x1, x1, L2_SIZE
+
     set_page_table x0, 0, PT_PT
     set_page_table x0, 1, PT_PT
 1:
