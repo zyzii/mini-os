@@ -384,12 +384,14 @@ void *sbrk(ptrdiff_t increment)
 #endif
 
 
-
+static int mm_inited;
 void init_mm(void)
 {
 
     unsigned long start_pfn, max_pfn;
 
+    if (mm_inited)
+        return;
     printk("MM: Init\n");
 
     get_max_pages();
@@ -407,6 +409,7 @@ void init_mm(void)
 #ifdef CONFIG_BALLOON
     nr_mem_pages = max_pfn;
 #endif
+    mm_inited = 1;
 }
 
 void fini_mm(void)

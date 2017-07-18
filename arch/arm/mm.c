@@ -24,6 +24,102 @@ unsigned long allocate_ondemand(unsigned long n, unsigned long alignment)
     BUG();
 }
 
+#if defined(__aarch64__)
+
+#include <arm64/pagetable.h>
+
+extern lpae_t boot_l1_pgtable[512];
+
+static inline void set_pgt_entry(lpae_t *ptr, lpae_t val)
+{
+    *ptr = val;
+    dsb(ishst);
+    isb();
+}
+
+static void build_pud(lpae_t *pgd, unsigned long vaddr, unsigned long vend,
+                      paddr_t phys, long mem_type,
+                      paddr_t (*new_page)(void), int level)
+{
+    lpae_t *pud;
+
+    pud = (lpae_t *)to_virt((*pgd) & ~ATTR_MASK_L) + l2_pgt_idx(vaddr);
+    do {
+        if (level == 2)
+             set_pgt_entry(pud, (phys & L2_MASK) | mem_type | L2_BLOCK);
+        vaddr += L2_SIZE;
+        phys += L2_SIZE;
+        pud++;
+    } while (vaddr < vend);
+}
+
+/* Setup the page table when the MMU is enabled */
+void build_pagetable(unsigned long vaddr, unsigned long start_pfn,
+                     unsigned long max_pfn, long mem_type,
+                     paddr_t (*new_page)(void), int level)
+{
+    paddr_t p_start;
+    unsigned long v_end, next;
+    lpae_t *pgd;
+
+    v_end = vaddr + max_pfn * PAGE_SIZE;
+    p_start = PFN_PHYS(start_pfn);
+
+    /* The boot_l1_pgtable can span 512G address space */
+    pgd = &boot_l1_pgtable[l1_pgt_idx(vaddr)];
+
+    do {
+        next = (vaddr + L1_SIZE);
+        if (next > v_end)
+            next = v_end;
+
+        if ((*pgd) == L1_INVAL) {
+            set_pgt_entry(pgd, (new_page()) | PT_PT);
+        }
+
+        build_pud(pgd, vaddr, next, p_start, mem_type, new_page, level);
+        p_start += next - vaddr;
+        vaddr = next;
+        pgd++;
+    } while (vaddr != v_end);
+}
+
+static unsigned long first_free_pfn;
+static paddr_t get_new_page(void)
+{
+    paddr_t new_page;
+
+    memset(pfn_to_virt(first_free_pfn), 0, PAGE_SIZE);
+    dsb(ishst);
+
+    new_page = PFN_PHYS(first_free_pfn);
+    first_free_pfn++;
+    return new_page;
+}
+
+/*
+ * This function will setup the page table for the memory system.
+ *
+ * Note: We get the page for page table from the first free PFN,
+ *       the get_new_page() will increase the @first_free_pfn.
+ */
+void init_pagetable(unsigned long *start_pfn, unsigned long base_pfn,
+                    unsigned long max_pfn)
+{
+    first_free_pfn = *start_pfn;
+
+    build_pagetable((unsigned long)pfn_to_virt(base_pfn), base_pfn,
+		    max_pfn, BLOCK_DEF_ATTR, get_new_page, 2);
+    *start_pfn = first_free_pfn;
+}
+
+#else
+void init_pagetable(unsigned long *start_pfn, unsigned long base_pfn,
+                    unsigned long max_pfn)
+{
+}
+#endif
+
 void arch_init_mm(unsigned long *start_pfn_p, unsigned long *max_pfn_p)
 {
     int memory;
@@ -73,6 +169,8 @@ void arch_init_mm(unsigned long *start_pfn_p, unsigned long *max_pfn_p)
     *start_pfn_p = PFN_UP(to_phys(end));
     heap_len = mem_size - (PFN_PHYS(*start_pfn_p) - mem_base);
     *max_pfn_p = *start_pfn_p + PFN_DOWN(heap_len);
+
+    init_pagetable(start_pfn_p, PHYS_PFN(mem_base), PHYS_PFN(mem_size));
 
     printk("Using pages %lu to %lu as free space for heap.\n", *start_pfn_p, *max_pfn_p);
 

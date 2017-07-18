@@ -41,6 +41,11 @@ void arch_init(void *dtb_pointer, paddr_t physical_offset)
     /* Map shared_info page */
     HYPERVISOR_shared_info = map_shared_info(NULL);
 
+#if defined(__aarch64__)
+    /* We need to init the memory, and then init the console/xenbus/gic */
+    init_mm();
+#endif
+
     get_console(NULL);
     get_xenbus(NULL);
 
