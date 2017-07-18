@@ -37,16 +37,43 @@ static inline void set_pgt_entry(lpae_t *ptr, lpae_t val)
     isb();
 }
 
+static void build_pte(lpae_t *pud, unsigned long vaddr, unsigned long vend,
+                      paddr_t phys, long mem_type)
+{
+    lpae_t *pte;
+
+    pte = (lpae_t *)to_virt((*pud) & ~ATTR_MASK_L) + l3_pgt_idx(vaddr);
+    do {
+        set_pgt_entry(pte, (phys & L3_MASK) | mem_type | L3_PAGE);
+
+        vaddr += L3_SIZE;
+        phys += L3_SIZE;
+        pte++;
+    } while (vaddr < vend);
+}
+
 static void build_pud(lpae_t *pgd, unsigned long vaddr, unsigned long vend,
                       paddr_t phys, long mem_type,
                       paddr_t (*new_page)(void), int level)
 {
     lpae_t *pud;
+    unsigned long next;
 
     pud = (lpae_t *)to_virt((*pgd) & ~ATTR_MASK_L) + l2_pgt_idx(vaddr);
     do {
-        if (level == 2)
+        if (level == 2) {
              set_pgt_entry(pud, (phys & L2_MASK) | mem_type | L2_BLOCK);
+	} else if (level == 3) {
+             next = vaddr + L2_SIZE;
+             if (next > vend)
+                 next = vend;
+
+             if ((*pud) == L2_INVAL)
+                 set_pgt_entry(pud, (new_page()) | PT_PT);
+
+             build_pte(pud, vaddr, next, phys, mem_type);
+        }
+
         vaddr += L2_SIZE;
         phys += L2_SIZE;
         pud++;
@@ -113,10 +140,37 @@ void init_pagetable(unsigned long *start_pfn, unsigned long base_pfn,
     *start_pfn = first_free_pfn;
 }
 
+
+static paddr_t alloc_new_page(void)
+{
+    unsigned long page;
+
+    page = alloc_page();
+    if (!page)
+        BUG();
+    memset((void *)page, 0, PAGE_SIZE);
+    dsb(ishst);
+    return to_phys(page);
+}
+
+unsigned long map_frame_virt(unsigned long mfn)
+{
+    unsigned long vaddr = (unsigned long)mfn_to_virt(mfn);
+
+    build_pagetable(vaddr, mfn, 1, BLOCK_DEF_ATTR, alloc_new_page, 3);
+
+    return vaddr;
+}
+
 #else
 void init_pagetable(unsigned long *start_pfn, unsigned long base_pfn,
                     unsigned long max_pfn)
 {
+}
+
+unsigned long map_frame_virt(unsigned long mfn)
+{
+    return mfn_to_virt(mfn);
 }
 #endif
 
@@ -256,7 +310,3 @@ grant_entry_v1_t *arch_init_gnttab(int nr_grant_frames)
     return to_virt(gnttab_table);
 }
 
-unsigned long map_frame_virt(unsigned long mfn)
-{
-    return mfn_to_virt(mfn);
-}
