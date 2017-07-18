@@ -29,6 +29,9 @@ void arch_init(void *dtb_pointer, paddr_t physical_offset)
 
     xprintk("Virtual -> physical offset = %"PRIpaddr" \n", physical_address_offset);
 
+    /* Do the preparations */
+    arch_mm_preinit(&dtb_pointer);
+
     xprintk("Checking DTB at %p...\n", dtb_pointer);
 
     if ((r = fdt_check_header(dtb_pointer))) {
