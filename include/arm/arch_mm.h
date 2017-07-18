@@ -1,6 +1,7 @@
 #ifndef _ARCH_MM_H_
 #define _ARCH_MM_H_
 
+typedef uint64_t lpae_t;
 typedef uint64_t paddr_t;
 
 extern char _text, _etext, _erodata, _edata, _end, __bss_start;
