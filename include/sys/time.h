@@ -24,6 +24,9 @@
 #include_next <sys/time.h>
 
 #else
+
+#ifndef _STRUCT_TIMEVAL
+#define _STRUCT_TIMEVAL	1
 struct timespec {
     time_t      tv_sec;
     long        tv_nsec;
@@ -38,6 +41,7 @@ struct timeval {
 };
 
 int      gettimeofday(struct timeval *tv, void *tz);
+#endif
 
 #endif
 #ifdef HAVE_LIBC
