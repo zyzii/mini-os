@@ -22,6 +22,7 @@
     .globl boot_l2_pgtable
     .globl boot_l2_pgtable1
     .globl idmap_pgtable
+    .globl shared_info
 
     .align 12
 boot_l1_pgtable:
@@ -31,6 +32,8 @@ boot_l2_pgtable:
 boot_l2_pgtable1:
     .fill  PAGE_SIZE,1,0
 idmap_pgtable:
+    .fill  PAGE_SIZE,1,0
+shared_info:
     .fill  PAGE_SIZE,1,0
 
     .align 12
