@@ -30,7 +30,7 @@
     .data
     .globl _boot_stack
     .globl boot_l1_pgtable, boot_l2_pgtable, boot_l2_pgtable1
-    .globl idmap_pgtable
+    .globl idmap_pgtable, shared_info
 
     .align 12
 boot_l1_pgtable:
@@ -40,6 +40,8 @@ boot_l2_pgtable:
 boot_l2_pgtable1:
     .space PAGE_SIZE
 idmap_pgtable:
+    .space PAGE_SIZE
+shared_info:
     .space PAGE_SIZE
 
     .align 12
