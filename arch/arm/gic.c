@@ -44,14 +44,22 @@ static struct gic gic;
 static inline uint32_t REG_READ32(volatile uint32_t *addr)
 {
     uint32_t value;
+#if defined(__arm__)
     __asm__ __volatile__("ldr %0, [%1]":"=&r"(value):"r"(addr));
+#else
+    __asm__ __volatile__("ldr %w0, [%1]":"=&r"(value):"r"(addr));
+#endif
     rmb();
     return value;
 }
 
 static inline void REG_WRITE32(volatile uint32_t *addr, unsigned int value)
 {
+#if defined(__arm__)
     __asm__ __volatile__("str %0, [%1]"::"r"(value), "r"(addr));
+#else
+    __asm__ __volatile__("str %w0, [%1]"::"r" (value), "r"(addr));
+#endif
     wmb();
 }
 
