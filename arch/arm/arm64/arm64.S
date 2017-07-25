@@ -1,6 +1,7 @@
 #include "asm.h"
 #include <arm64/pagetable.h>
 #include <xen/xen.h>
+#include <arm64/os.h>
 
 /* This macro will use the x0/x1/x2/x16 */
 #define PRINT(_s)                              \
@@ -461,3 +462,61 @@ el_invalid(el1_fiq, BAD_FIQ, 1);
 el_invalid(el0_fiq, BAD_FIQ, 0);
 el_invalid(el1_error, BAD_ERROR, 1);
 el_invalid(el0_error, BAD_ERROR, 0);
+
+/*
+ * => x0 = &prev->sp
+ *    x1 = &next->sp
+ * <= switch to the next thread
+ *
+ *  The stack layout shows below:
+ *
+ *                    ---------------
+ *                   |      lr       |
+ *                   |---------------|
+ *                   |  User data    |
+ *                   |---------------|
+ *                   |      sp       |    -----------------
+ *                   |---------------|          |
+ *                   |      x29      |          |
+ *                   |---------------|          v
+ *                   |      x28      |
+ *                   |---------------|  CALLEE_SAVED_REGISTERS
+ *                   |     .....     |
+ *                   |---------------|          ^
+ *                   |      x20      |          |
+ *                   |---------------|          |
+ *    thread->sp --> |      x19      |    -----------------
+ *                   |---------------|
+ */
+ENTRY(__arch_switch_threads)
+    /* Store the callee-saved registers and lr(x30) */
+    mov   x4, sp
+
+    ldr   x2, [x0]
+    stp   x19, x20, [x2, #16 * 0]
+    stp   x21, x22, [x2, #16 * 1]
+    stp   x23, x24, [x2, #16 * 2]
+    stp   x25, x26, [x2, #16 * 3]
+    stp   x27, x28, [x2, #16 * 4]
+    stp   x29, x4,  [x2, #16 * 5]
+
+    add   x2, x2, #(CALLEE_SAVED_REGISTERS * 8)
+    add   x2, x2, #8             /* skip the user data */
+    str   x30, [x2]
+
+    /* Restore the callee-saved registers and lr(x30) */
+    ldr   x2, [x1]
+    ldp   x19, x20, [x2, #16 * 0]
+    ldp   x21, x22, [x2, #16 * 1]
+    ldp   x23, x24, [x2, #16 * 2]
+    ldp   x25, x26, [x2, #16 * 3]
+    ldp   x27, x28, [x2, #16 * 4]
+    ldp   x29, x4,  [x2, #16 * 5]
+
+    add   x2, x2, #(CALLEE_SAVED_REGISTERS * 8)
+    add   x2, x2, #8             /* skip the user data */
+    ldr   x30, [x2]
+
+    mov   sp,  x4
+    ret
+ENDPROC(__arch_switch_threads)
