@@ -32,6 +32,12 @@ struct thread* arch_create_thread(char *name, void (*function)(void *),
      * for the initial switch. */
     thread->sp = (unsigned long) sp - sizeof(unsigned long) * CALLEE_SAVED_REGISTERS;
 
+    /*
+     * Please refer to the stack layout in the comment for __arch_switch_threads.
+     * We need to set the sp register for arm_start_thread when a thread runs
+     * at the first time.
+     */
+    *(--sp) = thread->sp;
     thread->ip = (unsigned long) arm_start_thread;
 
     return thread;
