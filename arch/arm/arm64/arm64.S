@@ -1,6 +1,7 @@
 #include "asm.h"
 #include <arm64/pagetable.h>
 #include <xen/xen.h>
+#include <arm64/os.h>
 
 /* This macro will use the x0/x1/x2/x16 */
 #define PRINT(_s)                              \
@@ -446,3 +447,40 @@ el_invalid(el1_fiq, BAD_FIQ, 1);
 el_invalid(el0_fiq, BAD_FIQ, 0);
 el_invalid(el1_error, BAD_ERROR, 1);
 el_invalid(el0_error, BAD_ERROR, 0);
+
+/*
+ * => x0 = &prev->sp
+ *    x1 = &next->sp
+ * <= switch to the next thread
+ */
+ENTRY(__arch_switch_threads)
+    /* Store the callee-saved registers to prev's struct thread */
+    mov   x2, sp
+
+    sub   x2, x2, #(CALLEE_SAVED_REGISTERS * 8)
+    stp   x19, x20, [x2, #16 * 0]
+    stp   x21, x22, [x2, #16 * 1]
+    stp   x23, x24, [x2, #16 * 2]
+    stp   x25, x26, [x2, #16 * 3]
+    stp   x27, x28, [x2, #16 * 4]
+    str   x29, [x2, #16 * 5]
+
+    /* Store current sp/ip to prev's struct thread */
+    stp   x2, x30, [x0]
+
+    /* Load the sp/ip from next's struct thread */
+    ldp   x2, x30, [x1]
+
+    /* Restore the callee-saved registers */
+    ldp   x19, x20, [x2, #16 * 0]
+    ldp   x21, x22, [x2, #16 * 1]
+    ldp   x23, x24, [x2, #16 * 2]
+    ldp   x25, x26, [x2, #16 * 3]
+    ldp   x27, x28, [x2, #16 * 4]
+    ldr   x29, [x2, #16 * 5]
+
+    add   x2, x2, #(CALLEE_SAVED_REGISTERS * 8)
+    mov   sp, x2
+
+    br    x30
+ENDPROC(__arch_switch_threads)

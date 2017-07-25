@@ -1,6 +1,7 @@
 #ifndef _ARM64_OS_H_
 #define _ARM64_OS_H_
 
+#ifndef __ASSEMBLY__
 static inline void local_irq_disable(void)
 {
     __asm__ __volatile__("msr daifset, #2": : :"memory");
@@ -31,6 +32,8 @@ static inline void local_irq_enable(void)
 #define mb()            dmb(sy) /* Full system memory barrier all */
 #define wmb()           dmb(st) /* Full system memory barrier store */
 #define rmb()           dmb(ld) /* Full system memory barrier load */
+
+#endif
 
 /* The Callee-saved registers : x19 ~ x29 */
 #define CALLEE_SAVED_REGISTERS 11
