@@ -520,3 +520,15 @@ ENTRY(__arch_switch_threads)
     mov   sp,  x4
     ret
 ENDPROC(__arch_switch_threads)
+
+/*
+ * => sp = thread->sp
+ * <= x0 -> user data
+ *    x1 -> thread's main function
+ */
+ENTRY(arm_start_thread)
+    add  x2, sp, #(CALLEE_SAVED_REGISTERS * 8)
+    ldp  x0, x1, [x2]
+    ldr  x30, =exit_thread
+    blr  x1
+ENDPROC(arm_start_thread)
