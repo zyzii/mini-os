@@ -27,10 +27,10 @@ struct thread* arch_create_thread(char *name, void (*function)(void *),
     *(--sp) = (unsigned long) function;
     *(--sp) = (unsigned long) data;
 
-    /* We leave room for the 8 callee-saved registers which we will
+    /* We leave room for the callee-saved registers which we will
      * try to restore on thread switch, even though they're not needed
      * for the initial switch. */
-    thread->sp = (unsigned long) sp - 4 * CALLEE_SAVED_REGISTERS;
+    thread->sp = (unsigned long) sp - sizeof(unsigned long) * CALLEE_SAVED_REGISTERS;
 
     thread->ip = (unsigned long) arm_start_thread;
 
