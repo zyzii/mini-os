@@ -25,4 +25,7 @@ static inline void local_irq_enable(void)
     __asm__ __volatile__("mrs %0, daif":"=r"(x)::"memory"); \
 }
 
+/* The Callee-saved registers : x19 ~ x29 */
+#define CALLEE_SAVED_REGISTERS 11
+
 #endif
