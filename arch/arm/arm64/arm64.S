@@ -484,3 +484,15 @@ ENTRY(__arch_switch_threads)
 
     br    x30
 ENDPROC(__arch_switch_threads)
+
+/*
+ * => sp = thread->sp
+ * <= x0 -> user data
+ *    x1 -> thread's main function
+ */
+ENTRY(arm_start_thread)
+    mov  x2, sp
+    ldp  x0, x1, [x2]
+    ldr  x30, =exit_thread
+    br  x1
+ENDPROC(arm_start_thread)
