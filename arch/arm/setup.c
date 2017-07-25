@@ -19,7 +19,7 @@ void *device_tree;
 /*
  * INITIAL C ENTRY POINT.
  */
-void arch_init(void *dtb_pointer, uint32_t physical_offset)
+void arch_init(void *dtb_pointer, paddr_t physical_offset)
 {
     int r;
 
@@ -27,7 +27,7 @@ void arch_init(void *dtb_pointer, uint32_t physical_offset)
 
     physical_address_offset = physical_offset;
 
-    xprintk("Virtual -> physical offset = %x\n", physical_address_offset);
+    xprintk("Virtual -> physical offset = %"PRIpaddr" \n", physical_address_offset);
 
     xprintk("Checking DTB at %p...\n", dtb_pointer);
 
