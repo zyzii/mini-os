@@ -39,8 +39,8 @@ struct thread* arch_create_thread(char *name, void (*function)(void *),
 
 void run_idle_thread(void)
 {
-    __asm__ __volatile__ ("mov sp, %0; bx %1"::
-            "r"(idle_thread->sp + 4 * CALLEE_SAVED_REGISTERS),
+    __asm__ __volatile__ ("mov sp, %0; br %1"::
+            "r"(idle_thread->sp + sizeof(unsigned long) * CALLEE_SAVED_REGISTERS),
             "r"(idle_thread->ip));
     /* Never arrive here! */
 }
