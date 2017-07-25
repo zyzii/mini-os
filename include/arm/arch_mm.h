@@ -6,7 +6,9 @@ typedef uint64_t paddr_t;
 extern char _text, _etext, _erodata, _edata, _end, __bss_start;
 extern int _boot_stack[];
 extern int _boot_stack_end[];
-extern uint32_t physical_address_offset;	/* Add this to a virtual address to get the physical address (wraps at 4GB) */
+
+/* Add this to a virtual address to get the physical address */
+extern paddr_t physical_address_offset;
 
 #define PAGE_SHIFT        12
 #define PAGE_SIZE        (1 << PAGE_SHIFT)
