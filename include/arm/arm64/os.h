@@ -49,4 +49,7 @@ static inline void local_irq_enable(void)
 #define wmb()           dsb(st) /* Full system memory barrier store */
 #define rmb()           dsb(ld) /* Full system memory barrier load */
 
+/* The Callee-saved registers : x19 ~ x29 */
+#define CALLEE_SAVED_REGISTERS 11
+
 #endif
