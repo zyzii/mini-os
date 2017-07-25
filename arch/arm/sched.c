@@ -37,6 +37,7 @@ struct thread* arch_create_thread(char *name, void (*function)(void *),
     return thread;
 }
 
+#if defined(__arm__)
 void run_idle_thread(void)
 {
     __asm__ __volatile__ ("mov sp, %0; bx %1"::
@@ -44,3 +45,13 @@ void run_idle_thread(void)
             "r"(idle_thread->ip));
     /* Never arrive here! */
 }
+
+#elif defined(__aarch64__)
+void run_idle_thread(void)
+{
+    __asm__ __volatile__ ("mov sp, %0; br %1"::
+		    "r"(idle_thread->sp), "r"(idle_thread->ip));
+    /* Never arrive here! */
+}
+
+#endif
