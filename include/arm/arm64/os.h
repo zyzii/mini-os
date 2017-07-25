@@ -1,6 +1,8 @@
 #ifndef _ARM64_OS_H_
 #define _ARM64_OS_H_
 
+#ifndef __ASSEMBLY__
+
 #define BUG()           __asm__ __volatile("wfi" ::: "memory")
 
 static inline void local_irq_disable(void)
@@ -24,6 +26,8 @@ static inline void local_irq_enable(void)
 #define local_save_flags(x) { \
     __asm__ __volatile__("mrs %0, daif":"=r"(x)::"memory"); \
 }
+
+#endif
 
 /* The Callee-saved registers : x19 ~ x29 */
 #define CALLEE_SAVED_REGISTERS 11
