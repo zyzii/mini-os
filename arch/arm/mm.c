@@ -6,7 +6,7 @@
 #include <libfdt.h>
 #include <lib.h>
 
-uint32_t physical_address_offset;
+paddr_t physical_address_offset;
 struct e820entry e820_map[1] = {
     {
         .addr = 0,
