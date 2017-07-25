@@ -14,3 +14,8 @@ include/list.h
 mini-os
 mini-os.gz
 minios-config.mk
+dtc/
+include/fdt.h
+include/libfdt.h
+include/libfdt_env.h
+mini-os.img
