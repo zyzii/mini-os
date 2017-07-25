@@ -1,5 +1,6 @@
 #include "asm.h"
 #include <arch_limits.h>
+#include <arm64/os.h>
 #include <arm64/pagetable.h>
 #include <arm64/traps.h>
 #include <xen/xen.h>
@@ -434,3 +435,40 @@ ENTRY(vector_table)
     vector_entry el0_fiq_invalid          /* FIQ 32-bit EL0         */
     vector_entry el0_error_invalid        /* Error 32-bit EL0       */
 END(vector_table)
+
+/*
+ * => x0 = &prev->sp
+ *    x1 = &next->sp
+ * <= switch to the next thread
+ */
+ENTRY(__arch_switch_threads)
+    /* Store the callee-saved registers to prev's struct thread */
+    mov   x2, sp
+
+    sub   x2, x2, #(CALLEE_SAVED_REGISTERS * 8)
+    stp   x19, x20, [x2, #16 * 0]
+    stp   x21, x22, [x2, #16 * 1]
+    stp   x23, x24, [x2, #16 * 2]
+    stp   x25, x26, [x2, #16 * 3]
+    stp   x27, x28, [x2, #16 * 4]
+    str   x29, [x2, #16 * 5]
+
+    /* Store current sp/ip to prev's struct thread */
+    stp   x2, x30, [x0]
+
+    /* Load the sp/ip from next's struct thread */
+    ldp   x2, x30, [x1]
+
+    /* Restore the callee-saved registers */
+    ldp   x19, x20, [x2, #16 * 0]
+    ldp   x21, x22, [x2, #16 * 1]
+    ldp   x23, x24, [x2, #16 * 2]
+    ldp   x25, x26, [x2, #16 * 3]
+    ldp   x27, x28, [x2, #16 * 4]
+    ldr   x29, [x2, #16 * 5]
+
+    add   x2, x2, #(CALLEE_SAVED_REGISTERS * 8)
+    mov   sp, x2
+
+    br    x30
+ENDPROC(__arch_switch_threads)
