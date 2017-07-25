@@ -1,11 +1,9 @@
 #include <mini-os/sched.h>
 #include <mini-os/xmalloc.h>
 #include <mini-os/console.h>
+#include <mini-os/os.h>
 
 void arm_start_thread(void);
-
-/* The AAPCS requires the callee (e.g. __arch_switch_threads) to preserve r4-r11. */
-#define CALLEE_SAVED_REGISTERS 8
 
 /* Architecture specific setup of thread creation */
 struct thread* arch_create_thread(char *name, void (*function)(void *),

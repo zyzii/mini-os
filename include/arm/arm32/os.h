@@ -26,4 +26,7 @@ static inline void local_irq_enable(void) {
 #define rmb() __asm__("dsb":::"memory");
 #define wmb() __asm__("dsb":::"memory");
 
+/* The AAPCS requires the callee (e.g. __arch_switch_threads) to preserve r4-r11. */
+#define CALLEE_SAVED_REGISTERS 8
+
 #endif
