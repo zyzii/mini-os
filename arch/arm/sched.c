@@ -10,6 +10,7 @@ struct thread* arch_create_thread(char *name, void (*function)(void *),
                                   void *data)
 {
     struct thread *thread;
+    unsigned long *sp;
 
     thread = xmalloc(struct thread);
     /* We can't use lazy allocation here since the trap handler runs on the stack */
@@ -22,9 +23,9 @@ struct thread* arch_create_thread(char *name, void (*function)(void *),
     *((unsigned long *)thread->stack) = (unsigned long)thread;
 
     /* Push the details to pass to arm_start_thread onto the stack. */
-    int *sp = (int *) (thread->stack + STACK_SIZE);
-    *(--sp) = (int) function;
-    *(--sp) = (int) data;
+    sp = (unsigned long *) (thread->stack + STACK_SIZE);
+    *(--sp) = (unsigned long) function;
+    *(--sp) = (unsigned long) data;
 
     /* We leave room for the 8 callee-saved registers which we will
      * try to restore on thread switch, even though they're not needed
