@@ -178,7 +178,11 @@ $(OBJ_DIR)/$(TARGET): $(OBJS) $(APP_O) arch_lib $(LINK_FILE)
 	$(LD) -r $(LDFLAGS) $(HEAD_OBJ) $(APP_O) $(OBJS) $(LDARCHLIB) $(LDLIBS) -o $@.o
 	$(OBJCOPY) -w -G $(GLOBAL_PREFIX)* -G _start $@.o $@.o
 	$(LD) $(LDFLAGS) $(LDFLAGS_FINAL) $@.o $(EXTRA_OBJS) -o $@
+ifeq ($(TARGET_ARCH_FAM),arm)
+	$(OBJCOPY) -O binary $@ $@.img
+else
 	gzip -n -f -9 -c $@ >$@.gz
+endif
 
 .PHONY: config
 CONFIG_FILE ?= $(CURDIR)/minios-config.mk
