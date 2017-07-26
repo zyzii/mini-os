@@ -12,6 +12,13 @@ include Config.mk
 # Symlinks and headers that must be created before building the C files
 GENERATED_HEADERS := include/list.h $(ARCH_LINKS) include/mini-os include/$(TARGET_ARCH_FAM)/mini-os
 
+ifeq ($(TARGET_ARCH_FAM),arm)
+GENERATED_HEADERS += include/fdt.h include/libfdt.h
+
+include/%.h: dtc/libfdt/%.h
+	ln -s ../$^ $@
+endif
+
 EXTRA_DEPS += $(GENERATED_HEADERS)
 
 # Include common mini-os makerules.
@@ -35,6 +42,14 @@ TARGET := mini-os
 
 # Subdirectories common to mini-os
 SUBDIRS := lib xenbus console
+
+ifeq ($(TARGET_ARCH_FAM),arm)
+SUBDIRS += dtc/libfdt
+# Device tree support
+FDT_SRC := dtc/libfdt/fdt.c dtc/libfdt/fdt_ro.c dtc/libfdt/fdt_strerror.c
+
+src-y += ${FDT_SRC}
+endif
 
 src-$(CONFIG_BLKFRONT) += blkfront.c
 src-$(CONFIG_TPMFRONT) += tpmfront.c
