@@ -55,10 +55,13 @@ XEN_INTERFACE_VERSION ?= 0x00030205
 export XEN_INTERFACE_VERSION
 
 # Try to find out the architecture family TARGET_ARCH_FAM.
-# First check whether x86_... is contained (for x86_32, x86_32y, x86_64).
-# If not x86 then use $(MINIOS_TARGET_ARCH)
+# First check whether x86_... is contained (for x86_32, x86_32y, x86_64),
+# then check whether arm is contained (for arm64, arm32),
+# If not x86/arm then use $(MINIOS_TARGET_ARCH)
 ifeq ($(findstring x86_,$(MINIOS_TARGET_ARCH)),x86_)
 TARGET_ARCH_FAM = x86
+else ifeq ($(findstring arm,$(MINIOS_TARGET_ARCH)),arm)
+TARGET_ARCH_FAM = arm
 else
 TARGET_ARCH_FAM = $(MINIOS_TARGET_ARCH)
 endif
