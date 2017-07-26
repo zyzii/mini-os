@@ -61,7 +61,11 @@ ARCH_LIB := lib$(ARCH_LIB_NAME).a
 # This object contains the entrypoint for startup from Xen.
 # $(HEAD_ARCH_OBJ) has to be built in the architecture specific directory.
 HEAD_ARCH_OBJ := $(MINIOS_TARGET_ARCH).o
+ifeq ($(MINIOS_TARGET_ARCH),arm64)
+HEAD_OBJ := $(OBJ_DIR)/$(TARGET_ARCH_DIR)/arm64/$(HEAD_ARCH_OBJ)
+else
 HEAD_OBJ := $(OBJ_DIR)/$(TARGET_ARCH_DIR)/$(HEAD_ARCH_OBJ)
+endif
 
 
 $(OBJ_DIR)/%.o: %.c $(HDRS) Makefile $(EXTRA_DEPS)
