@@ -1,0 +1,7 @@
+ifeq ($(MINIOS_TARGET_ARCH),arm64)
+ARCH_CFLAGS  := -mgeneral-regs-only -fno-PIE
+ARCH_LDFLAGS :=
+ARCH_ASFLAGS :=
+EXTRA_INC += $(TARGET_ARCH_FAM)/$(MINIOS_TARGET_ARCH)
+EXTRA_SRC += arch/$(EXTRA_INC)
+endif
