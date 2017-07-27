@@ -140,7 +140,11 @@ void init_time(void)
 {
     printk("Initialising timer interface\n");
 
+#if defined(__arm__)
     __asm__ __volatile__("mrc p15, 0, %0, c14, c0, 0":"=r"(counter_freq));
+#elif defined(__aarch64__)
+    __asm__ __volatile__("mrs %0, cntfrq_el0":"=r"(counter_freq));
+#endif
     cntvct_at_init = read_virtual_count();
     printk("Virtual Count register is %llx, freq = %d Hz\n",
            (unsigned long long) cntvct_at_init, counter_freq);
