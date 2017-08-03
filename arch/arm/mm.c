@@ -28,6 +28,7 @@ void arch_init_mm(unsigned long *start_pfn_p, unsigned long *max_pfn_p)
     int memory;
     int prop_len = 0;
     const uint64_t *regs;
+    uintptr_t end;
 
     printk("    _text: %p(VA)\n", &_text);
     printk("    _etext: %p(VA)\n", &_etext);
@@ -56,7 +57,7 @@ void arch_init_mm(unsigned long *start_pfn_p, unsigned long *max_pfn_p)
         BUG();
     }
 
-    unsigned int end = (unsigned int) &_end;
+    end = (uintptr_t) &_end;
     paddr_t mem_base = fdt64_to_cpu(regs[0]);
     uint64_t mem_size = fdt64_to_cpu(regs[1]);
     printk("Found memory at 0x%llx (len 0x%llx)\n",
