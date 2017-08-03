@@ -20,8 +20,8 @@ extern paddr_t physical_address_offset;
 
 #define DEF_PAGE_PROT     0
 
-#define to_phys(x)                 (((paddr_t)(x)+physical_address_offset) & 0xffffffff)
-#define to_virt(x)                 ((void *)(((x)-physical_address_offset) & 0xffffffff))
+#define to_phys(x)                 (((paddr_t)(x)+physical_address_offset) & (~0UL))
+#define to_virt(x)                 ((void *)(((x)-physical_address_offset) & (~0UL)))
 
 #define PFN_UP(x)                  (unsigned long)(((x) + PAGE_SIZE-1) >> PAGE_SHIFT)
 #define PFN_DOWN(x)                (unsigned long)((x) >> PAGE_SHIFT)
