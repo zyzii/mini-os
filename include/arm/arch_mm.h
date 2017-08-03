@@ -16,8 +16,14 @@ extern paddr_t physical_address_offset;
 
 #define L1_PROT          0
 
-#define to_phys(x)                 (((paddr_t)(x)+physical_address_offset) & 0xffffffff)
-#define to_virt(x)                 ((void *)(((x)-physical_address_offset) & 0xffffffff))
+#if defined(__aarch64__)
+#define ADDR_MASK         0xffffffffffffffff
+#else
+#define ADDR_MASK         0xffffffff
+#endif
+
+#define to_phys(x)                 (((paddr_t)(x)-physical_address_offset) & ADDR_MASK)
+#define to_virt(x)                 ((void *)(((x)+physical_address_offset) & ADDR_MASK))
 
 #define PFN_UP(x)                  (unsigned long)(((x) + PAGE_SIZE-1) >> PAGE_SHIFT)
 #define PFN_DOWN(x)                (unsigned long)((x) >> PAGE_SHIFT)
