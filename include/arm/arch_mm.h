@@ -41,4 +41,5 @@ extern paddr_t physical_address_offset;
 // FIXME
 #define map_frames(f, n) (NULL)
 
+void *ioremap(paddr_t addr, unsigned long size);
 #endif

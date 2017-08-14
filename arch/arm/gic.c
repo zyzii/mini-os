@@ -207,8 +207,10 @@ void gic_init(void) {
                 continue;
             }
 
-            gic.gicd_base = to_virt((long) fdt64_to_cpu(reg[0]));
-            gic.gicc_base = to_virt((long) fdt64_to_cpu(reg[2]));
+            gic.gicd_base = ioremap((unsigned long) fdt64_to_cpu(reg[0]),
+                                    (unsigned long) fdt64_to_cpu(reg[1]));
+            gic.gicc_base = ioremap((unsigned long) fdt64_to_cpu(reg[2]),
+                                    (unsigned long) fdt64_to_cpu(reg[3]));
             printk("Found GIC: gicd_base = %p, gicc_base = %p\n", gic.gicd_base, gic.gicc_base);
             break;
         }

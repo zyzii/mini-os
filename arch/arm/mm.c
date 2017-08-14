@@ -162,6 +162,13 @@ unsigned long map_frame_virt(unsigned long mfn)
     return vaddr;
 }
 
+void *ioremap(paddr_t addr, unsigned long size)
+{
+    build_pagetable((unsigned long)to_virt(addr), PHYS_PFN(addr), PFN_UP(size),
+		    BLOCK_DEF_ATTR, alloc_new_page, 3);
+    return to_virt(addr);
+}
+
 #else
 void init_pagetable(unsigned long *start_pfn, unsigned long base_pfn,
                     unsigned long max_pfn)
@@ -171,6 +178,11 @@ void init_pagetable(unsigned long *start_pfn, unsigned long base_pfn,
 unsigned long map_frame_virt(unsigned long mfn)
 {
     return mfn_to_virt(mfn);
+}
+
+void *ioremap(paddr_t addr, unsigned long size)
+{
+    return to_virt(addr);
 }
 #endif
 
