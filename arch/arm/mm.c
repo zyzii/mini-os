@@ -17,12 +17,6 @@ int arch_check_mem_block(int index, unsigned long *r_min, unsigned long *r_max)
     return 0;
 }
 
-unsigned long allocate_ondemand(unsigned long n, unsigned long alignment)
-{
-    // FIXME
-    BUG();
-}
-
 #if defined(__aarch64__)
 
 #include <arm64/pagetable.h>
@@ -237,6 +231,7 @@ void init_pagetable(unsigned long *start_pfn, unsigned long base,
 }
 
 static unsigned long virt_kernel_area_end;
+static unsigned long virt_demand_area_end;
 void arch_mm_preinit(void *dtb_pointer)
 {
     paddr_t **dtb_p = dtb_pointer;
@@ -244,6 +239,7 @@ void arch_mm_preinit(void *dtb_pointer)
     uintptr_t end = (uintptr_t) &_end;
 
     virt_kernel_area_end = VIRT_KERNEL_AREA;
+    virt_demand_area_end = VIRT_DEMAND_AREA;
 
     dtb = to_virt(((paddr_t)dtb));
     first_free_pfn = PFN_UP(to_phys(end));
@@ -295,6 +291,37 @@ unsigned long map_frame_virt(unsigned long mfn)
 
     return addr;
 }
+
+unsigned long allocate_ondemand(unsigned long n, unsigned long alignment)
+{
+    unsigned long addr;
+
+    addr = virt_demand_area_end;
+
+    /* Just for simple, make it page aligned. */
+    virt_demand_area_end += (n + PAGE_SIZE - 1) & PAGE_MASK;
+
+    ASSERT(virt_demand_area_end <= VIRT_HEAP_AREA);
+
+    return addr;
+}
+
+void *ioremap(paddr_t paddr, unsigned long size)
+{
+    unsigned long addr;
+    int ret;
+
+    addr = allocate_ondemand(size, 1);
+    if (!addr)
+        return NULL;
+
+    ret = build_pagetable(addr, PHYS_PFN(paddr), PFN_UP(size), MEM_DEF_ATTR,
+                  init_pagetable_ok? alloc_new_page: early_alloc_page, 3);
+    if (ret < 0)
+        return NULL;
+    return (void*)addr;
+}
+
 #else
 void arch_mm_preinit(void *dtb_pointer)
 {
