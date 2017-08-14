@@ -13,6 +13,7 @@ typedef uint64_t paddr_t;
 #define MAX_MEM_SIZE            (1UL << 39)
 #define VIRT_KERNEL_AREA        MAX_MEM_SIZE
 #define VIRT_DEMAND_AREA        (MAX_MEM_SIZE << 5)
+#define VIRT_HEAP_AREA          (MAX_MEM_SIZE << 6)
 #endif
 
 typedef uint64_t lpae_t;
@@ -47,4 +48,5 @@ void arch_mm_preinit(void *dtb_pointer);
 // FIXME
 #define map_frames(f, n) (NULL)
 
+void *ioremap(paddr_t addr, unsigned long size);
 #endif
