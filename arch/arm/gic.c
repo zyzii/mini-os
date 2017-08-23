@@ -177,6 +177,61 @@ static void gic_handler(void) {
     gic_eoir(&gic, irq);
 }
 
+static unsigned long parse_out_value(const uint32_t *reg, uint32_t size)
+{
+    if (size == 1)
+        return (unsigned long)fdt32_to_cpu(reg[0]);
+
+    if (size == 2) {
+	uint64_t *reg64 = (uint64_t *)reg;
+
+	return (unsigned long)fdt64_to_cpu(reg64[0]);
+    }
+    BUG();
+}
+
+/*
+ * Parse out the address/size for gicd/gicc.
+ *
+ * Return 0 on success; return 1 on error.
+ */
+static int gic_parse(int node, unsigned long *gicd_addr, unsigned long *gicd_size,
+           unsigned long *gicc_addr, unsigned long *gicc_size)
+{
+    uint32_t addr_size = 2, cell_size = 1; /* The default, refer to Spec. */
+    const uint32_t *reg32;
+    int pnode;
+
+    pnode = fdt_parent_offset(device_tree, node);
+    if (pnode < 0)
+         return 1;
+
+    reg32 = (uint32_t *)fdt_getprop(device_tree, pnode, "#address-cells", NULL);
+    if (reg32)
+         addr_size = fdt32_to_cpu(reg32[0]);
+
+    reg32 = (uint32_t *)fdt_getprop(device_tree, pnode, "#size-cells", NULL);
+    if (reg32)
+         cell_size = fdt32_to_cpu(reg32[0]);
+
+    if (addr_size > 2 || cell_size > 2) {
+         printk("Unsupported #address-cells: %d, #size-cells: %d\n",
+                addr_size, cell_size);
+	 return 1;
+    }
+
+    reg32 = fdt_getprop(device_tree, node, "reg", NULL);
+    if (reg32) {
+         *gicd_addr = parse_out_value(reg32, addr_size);
+         *gicd_size = parse_out_value(reg32 + addr_size, cell_size);
+         *gicc_addr = parse_out_value(reg32 + addr_size + cell_size, addr_size);
+         *gicc_size = parse_out_value(reg32 + addr_size + cell_size + addr_size,
+                                      cell_size);
+    }
+
+    return 0;
+}
+
 void gic_init(void) {
     gic.gicd_base = NULL;
     int node = 0;
@@ -188,7 +243,7 @@ void gic_init(void) {
             break;
 
         if (fdt_getprop(device_tree, node, "interrupt-controller", NULL)) {
-            int len = 0;
+            unsigned long gicd_addr, gicd_size, gicc_addr, gicc_size;
 
             if (fdt_node_check_compatible(device_tree, node, "arm,cortex-a15-gic") &&
                 fdt_node_check_compatible(device_tree, node, "arm,cortex-a7-gic")) {
@@ -196,21 +251,11 @@ void gic_init(void) {
                 continue;
             }
 
-            const uint64_t *reg = fdt_getprop(device_tree, node, "reg", &len);
+            if (gic_parse(node, &gicd_addr, &gicd_size, &gicc_addr, &gicc_size))
+		    continue;
 
-            /* We have two registers (GICC and GICD), each of which contains
-             * two parts (an address and a size), each of which is a 64-bit
-             * value (8 bytes), so we expect a length of 2 * 2 * 8 = 32.
-             * If any extra values are passed in future, we ignore them. */
-            if (reg == NULL || len < 32) {
-                printk("Bad 'reg' property: %p %d\n", reg, len);
-                continue;
-            }
-
-            gic.gicd_base = ioremap((unsigned long) fdt64_to_cpu(reg[0]),
-                                    (unsigned long) fdt64_to_cpu(reg[1]));
-            gic.gicc_base = ioremap((unsigned long) fdt64_to_cpu(reg[2]),
-                                    (unsigned long) fdt64_to_cpu(reg[3]));
+            gic.gicd_base = ioremap(gicd_addr, gicd_size);
+            gic.gicc_base = ioremap(gicc_addr, gicc_size);
             printk("Found GIC: gicd_base = %p, gicc_base = %p\n", gic.gicd_base, gic.gicc_base);
             break;
         }
