@@ -25,7 +25,7 @@
 #define SHRT_MAX        0x7fff
 #define USHRT_MAX       0xffff
 
-#if defined(__x86_64__)
+#if defined(__x86_64__) || defined(__aarch64__)
 # define LONG_MAX       0x7fffffffffffffffL
 # define ULONG_MAX      0xffffffffffffffffUL
 #else
