@@ -54,7 +54,11 @@
 
 #include <stddef.h>
 #include <stdint.h>
+
+#ifdef HAVE_LIBC
 #include <stdlib.h>
+#endif
+
 #include <string.h>
 
 #ifdef __CHECKER__
