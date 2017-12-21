@@ -319,6 +319,6 @@ grant_entry_v1_t *arch_init_gnttab(int nr_grant_frames)
         BUG();
     }
 
-    return to_virt(gnttab_table);
+    return ioremap(gnttab_table, nr_grant_frames * PAGE_SIZE);
 }
 
