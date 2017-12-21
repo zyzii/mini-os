@@ -57,8 +57,7 @@ extern paddr_t physical_address_offset;
 #define virtual_to_mfn(_virt)	   virt_to_mfn(_virt)
 
 void arch_mm_preinit(void *dtb_pointer);
-// FIXME
-#define map_frames(f, n) (NULL)
+void *map_frames(unsigned long *frames, unsigned long pfn_num);
 
 void *ioremap(paddr_t addr, unsigned long size);
 
