@@ -352,6 +352,11 @@ void *map_frames_ex(const unsigned long *f, unsigned long n, unsigned long strid
     return (void *)addr;
 }
 
+void *map_frames(unsigned long *frames, unsigned long pfn_num)
+{
+    return map_frames_ex(frames, pfn_num, 1, 0, 1, DOMID_SELF, NULL, MEM_DEF_ATTR);
+}
+
 static lpae_t *get_ptep(unsigned long vaddr)
 {
     lpae_t *pgd, *pud, *pmd, *pte;
@@ -402,6 +407,11 @@ void init_pagetable(unsigned long *start_pfn, unsigned long base,
 unsigned long map_frame_virt(unsigned long mfn)
 {
     return mfn_to_virt(mfn);
+}
+
+void *map_frames(unsigned long *frames, unsigned long pfn_num)
+{
+    return pfn_to_virt(frames[0]);
 }
 #endif
 
@@ -543,5 +553,5 @@ grant_entry_v1_t *arch_init_gnttab(int nr_grant_frames)
         BUG();
     }
 
-    return to_virt(gnttab_table);
+    return map_frames(frames, nr_grant_frames);
 }
