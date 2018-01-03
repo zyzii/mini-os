@@ -80,7 +80,7 @@ static void periodic_thread(void *p)
     for(;;)
     {
         gettimeofday(&tv, NULL);
-        printk("T(s=%ld us=%ld)\n", tv.tv_sec, tv.tv_usec);
+        printk("----->4.12 MM---AAZZ FREEBSD with TLB flush----> T(s=%ld us=%ld)\n", tv.tv_sec, tv.tv_usec);
         msleep(1000);
     }
 }
@@ -213,6 +213,7 @@ static void blk_write_sector(uint64_t sector)
 static void blkfront_thread(void *p)
 {
     time_t lasttime = 0;
+    int c = 0;
 
     blk_dev = init_blkfront(NULL, &blk_info);
     if (!blk_dev) {
@@ -238,7 +239,7 @@ static void blkfront_thread(void *p)
         blk_read_sector(blk_info.sectors-1);
     }
 
-    while (!do_shutdown) {
+    while (!do_shutdown && c++ < 2999) {
         uint64_t sector = rand() % blk_info.sectors;
         struct timeval tv;
 #ifdef BLKTEST_WRITE
@@ -250,9 +251,9 @@ static void blkfront_thread(void *p)
         blkfront_aio_poll(blk_dev);
         gettimeofday(&tv, NULL);
         if (tv.tv_sec > lasttime + 10) {
-            printk("%llu read, %llu write\n",
+            printk("%llu read, %llu write, c: %d\n",
                     (unsigned long long) blk_size_read,
-                    (unsigned long long) blk_size_write);
+                    (unsigned long long) blk_size_write, c);
             lasttime = tv.tv_sec;
         }
 
