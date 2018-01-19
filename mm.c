@@ -350,7 +350,7 @@ int free_physical_pages(xen_pfn_t *mfns, int n)
 
 int map_frame_rw(unsigned long addr, unsigned long mfn)
 {
-    return do_map_frames(addr, &mfn, 1, 1, 1, DOMID_SELF, NULL, L1_PROT);
+    return do_map_frames(addr, &mfn, 1, 1, 1, DOMID_SELF, NULL, DEF_PAGE_PROT);
 }
 
 #ifdef HAVE_LIBC
