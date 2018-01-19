@@ -184,6 +184,8 @@ typedef unsigned long pgentry_t;
 #define L4_PROT (_PAGE_PRESENT|_PAGE_RW|_PAGE_ACCESSED|_PAGE_DIRTY|_PAGE_USER)
 #endif /* __i386__ || __x86_64__ */
 
+#define DEF_PAGE_PROT L1_PROT
+
 /* flags for ioremap */
 #define IO_PROT (L1_PROT)
 #define IO_PROT_NOCACHE (L1_PROT | _PAGE_PCD)
