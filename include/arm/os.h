@@ -14,46 +14,21 @@ void timer_handler(evtchn_port_t port, struct pt_regs *regs, void *ign);
 
 extern void *device_tree;
 
-#define BUG() while(1){asm volatile (".word 0xe7f000f0\n");} /* Undefined instruction; will call our fault handler. */
-
 #define smp_processor_id() 0
 
 #define barrier() __asm__ __volatile__("": : :"memory")
 
 extern shared_info_t *HYPERVISOR_shared_info;
 
-// disable interrupts
-static inline void local_irq_disable(void) {
-    __asm__ __volatile__("cpsid i":::"memory");
-}
-
-// enable interrupts
-static inline void local_irq_enable(void) {
-    __asm__ __volatile__("cpsie i":::"memory");
-}
-
-#define local_irq_save(x) { \
-    __asm__ __volatile__("mrs %0, cpsr;cpsid i":"=r"(x)::"memory");    \
-}
-
-#define local_irq_restore(x) {    \
-    __asm__ __volatile__("msr cpsr_c, %0"::"r"(x):"memory");    \
-}
-
-#define local_save_flags(x)    { \
-    __asm__ __volatile__("mrs %0, cpsr":"=r"(x)::"memory");    \
-}
+#if defined (__arm__)
+#include <arm32/os.h>
+#endif
 
 static inline int irqs_disabled(void) {
     int x;
     local_save_flags(x);
     return x & 0x80;
 }
-
-/* We probably only need "dmb" here, but we'll start by being paranoid. */
-#define mb() __asm__("dsb":::"memory");
-#define rmb() __asm__("dsb":::"memory");
-#define wmb() __asm__("dsb":::"memory");
 
 /************************** arm *******************************/
 #ifdef __INSIDE_MINIOS__
