@@ -8,13 +8,12 @@
 #include <mini-os/compiler.h>
 #include <mini-os/kernel.h>
 #include <xen/xen.h>
+#include <arm64/os.h>
 
 void arch_fini(void);
 void timer_handler(evtchn_port_t port, struct pt_regs *regs, void *ign);
 
 extern void *device_tree;
-
-#define BUG() while(1){asm volatile (".word 0xe7f000f0\n");} /* Undefined instruction; will call our fault handler. */
 
 #define smp_processor_id() 0
 
@@ -22,27 +21,29 @@ extern void *device_tree;
 
 extern shared_info_t *HYPERVISOR_shared_info;
 
-// disable interrupts
-static inline void local_irq_disable(void) {
-    __asm__ __volatile__("cpsid i":::"memory");
-}
+#define isb()           __asm__ __volatile("isb" ::: "memory")
 
-// enable interrupts
-static inline void local_irq_enable(void) {
-    __asm__ __volatile__("cpsie i":::"memory");
-}
+/*
+ * Options for DMB and DSB:
+ *	oshld	Outer Shareable, load
+ *	oshst	Outer Shareable, store
+ *	osh	Outer Shareable, all
+ *	nshld	Non-shareable, load
+ *	nshst	Non-shareable, store
+ *	nsh	Non-shareable, all
+ *	ishld	Inner Shareable, load
+ *	ishst	Inner Shareable, store
+ *	ish	Inner Shareable, all
+ *	ld	Full system, load
+ *	st	Full system, store
+ *	sy	Full system, all
+ */
+#define dmb(opt)        __asm__ __volatile("dmb " #opt ::: "memory")
+#define dsb(opt)        __asm__ __volatile("dsb " #opt ::: "memory")
 
-#define local_irq_save(x) { \
-    __asm__ __volatile__("mrs %0, cpsr;cpsid i":"=r"(x)::"memory");    \
-}
-
-#define local_irq_restore(x) {    \
-    __asm__ __volatile__("msr cpsr_c, %0"::"r"(x):"memory");    \
-}
-
-#define local_save_flags(x)    { \
-    __asm__ __volatile__("mrs %0, cpsr":"=r"(x)::"memory");    \
-}
+#define mb()            dmb(sy) /* Full system memory barrier all */
+#define wmb()           dmb(st) /* Full system memory barrier store */
+#define rmb()           dmb(ld) /* Full system memory barrier load */
 
 static inline int irqs_disabled(void) {
     int x;
@@ -50,14 +51,8 @@ static inline int irqs_disabled(void) {
     return x & 0x80;
 }
 
-/* We probably only need "dmb" here, but we'll start by being paranoid. */
-#define mb() __asm__("dsb":::"memory");
-#define rmb() __asm__("dsb":::"memory");
-#define wmb() __asm__("dsb":::"memory");
-
 /************************** arm *******************************/
 #ifdef __INSIDE_MINIOS__
-#if defined (__arm__)
 #define xchg(ptr,v) __atomic_exchange_n(ptr, v, __ATOMIC_SEQ_CST)
 
 /**
@@ -129,31 +124,9 @@ static __inline__ void clear_bit(int nr, volatile unsigned long *addr)
  */
 static __inline__ unsigned long __ffs(unsigned long word)
 {
-    int clz;
-
-    /* xxxxx10000 = word
-     * xxxxx01111 = word - 1
-     * 0000011111 = word ^ (word - 1)
-     *      4     = 31 - clz(word ^ (word - 1))
-     */
-
-    __asm__ (
-        "sub r0, %[word], #1\n"
-        "eor r0, r0, %[word]\n"
-        "clz %[clz], r0\n":
-        /* Outputs: */
-        [clz] "=r"(clz):
-        /* Inputs: */
-        [word] "r"(word):
-        /* Clobbers: */
-        "r0");
-
-    return 31 - clz;
+    return __builtin_ctzl(word);
 }
 
-#else /* ifdef __arm__ */
-#error "Unsupported architecture"
-#endif
 #endif /* ifdef __INSIDE_MINIOS */
 
 /********************* common arm32 and arm64  ****************************/
