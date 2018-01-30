@@ -22,6 +22,8 @@ extern shared_info_t *HYPERVISOR_shared_info;
 
 #if defined (__arm__)
 #include <arm32/os.h>
+#elif defined(__aarch64__)
+#include <arm64/os.h>
 #endif
 
 static inline int irqs_disabled(void) {
@@ -32,7 +34,6 @@ static inline int irqs_disabled(void) {
 
 /************************** arm *******************************/
 #ifdef __INSIDE_MINIOS__
-#if defined (__arm__)
 #define xchg(ptr,v) __atomic_exchange_n(ptr, v, __ATOMIC_SEQ_CST)
 
 /**
@@ -104,31 +105,9 @@ static __inline__ void clear_bit(int nr, volatile unsigned long *addr)
  */
 static __inline__ unsigned long __ffs(unsigned long word)
 {
-    int clz;
-
-    /* xxxxx10000 = word
-     * xxxxx01111 = word - 1
-     * 0000011111 = word ^ (word - 1)
-     *      4     = 31 - clz(word ^ (word - 1))
-     */
-
-    __asm__ (
-        "sub r0, %[word], #1\n"
-        "eor r0, r0, %[word]\n"
-        "clz %[clz], r0\n":
-        /* Outputs: */
-        [clz] "=r"(clz):
-        /* Inputs: */
-        [word] "r"(word):
-        /* Clobbers: */
-        "r0");
-
-    return 31 - clz;
+    return __builtin_ctzl(word);
 }
 
-#else /* ifdef __arm__ */
-#error "Unsupported architecture"
-#endif
 #endif /* ifdef __INSIDE_MINIOS */
 
 /********************* common arm32 and arm64  ****************************/
