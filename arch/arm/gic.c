@@ -5,6 +5,10 @@
 #include <mini-os/console.h>
 #include <libfdt.h>
 
+#if defined(__arm__)
+#include <mini-os/arm32/io.h>
+#endif
+
 //#define VGIC_DEBUG
 #ifdef VGIC_DEBUG
 #define DEBUG(_f, _a...) \
@@ -40,20 +44,6 @@ static struct gic gic;
 #define gicc(gic, offset) ((gic)->gicc_base + (offset))
 
 #define REG(addr) ((uint32_t *)(addr))
-
-static inline uint32_t REG_READ32(volatile uint32_t *addr)
-{
-    uint32_t value;
-    __asm__ __volatile__("ldr %0, [%1]":"=&r"(value):"r"(addr));
-    rmb();
-    return value;
-}
-
-static inline void REG_WRITE32(volatile uint32_t *addr, unsigned int value)
-{
-    __asm__ __volatile__("str %0, [%1]"::"r"(value), "r"(addr));
-    wmb();
-}
 
 static void gic_set_priority(struct gic *gic, int irq_number, unsigned char priority)
 {
