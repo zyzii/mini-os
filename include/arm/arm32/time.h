@@ -23,4 +23,13 @@ static inline void set_vtimer_compare(uint64_t value)
     write_timer_ctl(1);
 }
 
+static inline uint32_t read_frequency(void)
+{
+    uint32_t counter_freq;
+
+    __asm__ __volatile__("mrc p15, 0, %0, c14, c0, 0":"=r"(counter_freq));
+
+    return counter_freq;
+}
+
 #endif
