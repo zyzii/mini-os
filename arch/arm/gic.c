@@ -7,6 +7,8 @@
 
 #if defined(__arm__)
 #include <mini-os/arm32/io.h>
+#else
+#include <mini-os/arm64/io.h>
 #endif
 
 //#define VGIC_DEBUG
