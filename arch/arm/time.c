@@ -6,6 +6,7 @@
 #include <mini-os/arm32/time.h>
 #include <mini-os/arm32/traps.h>
 #else
+#include <mini-os/arm64/time.h>
 #include <mini-os/arm64/traps.h>
 #endif
 
