@@ -3,6 +3,7 @@
 #include <mini-os/events.h>
 
 #if defined(__arm__)
+#include <mini-os/arm32/time.h>
 #include <mini-os/arm32/traps.h>
 #else
 #include <mini-os/arm64/traps.h>
@@ -63,13 +64,6 @@ static inline uint64_t ns_to_ticks(s_time_t ns)
  */
 static struct timespec shadow_ts;
 
-static inline uint64_t read_virtual_count(void)
-{
-    uint32_t c_lo, c_hi;
-    __asm__ __volatile__("mrrc p15, 1, %0, %1, c14":"=r"(c_lo), "=r"(c_hi));
-    return (((uint64_t) c_hi) << 32) + c_lo;
-}
-
 /* monotonic_clock(): returns # of nanoseconds passed since time_init()
  *        Note: This function is required to return accurate
  *        time even in the absence of multiple timer ticks.
@@ -89,23 +83,6 @@ int gettimeofday(struct timeval *tv, void *tz)
     tv->tv_usec = NSEC_TO_USEC(nsec % 1000000000UL);
 
     return 0;
-}
-
-/* Set the timer and mask. */
-void write_timer_ctl(uint32_t value) {
-    __asm__ __volatile__(
-            "mcr p15, 0, %0, c14, c3, 1\n"
-            "isb"::"r"(value));
-}
-
-void set_vtimer_compare(uint64_t value) {
-    DEBUG("New CompareValue : %llx\n", value);
-
-    __asm__ __volatile__("mcrr p15, 3, %0, %H0, c14"
-            ::"r"(value));
-
-    /* Enable timer and unmask the output signal */
-    write_timer_ctl(1);
 }
 
 void unset_vtimer_compare(void) {
