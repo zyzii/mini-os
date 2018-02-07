@@ -5,6 +5,8 @@ typedef uint64_t paddr_t;
 #define PRIpaddr "lx"
 #define MIN_MEM_SIZE            (0x400000)
 #define MAX_MEM_SIZE            (1UL << 39)
+#define VIRT_KERNEL_AREA        ((unsigned long)to_virt(MAX_MEM_SIZE))
+#define VIRT_DEMAND_AREA        (VIRT_KERNEL_AREA + MAX_MEM_SIZE)
 
 typedef uint64_t lpae_t;
 
