@@ -251,6 +251,40 @@ void arch_mm_preinit(void *dtb_pointer)
     *dtb_p = dtb;
 }
 
+static unsigned long virt_kernel_area_end = VIRT_KERNEL_AREA;
+static unsigned long alloc_virt_kernel(unsigned n_pages)
+{
+    unsigned long addr;
+
+    addr = virt_kernel_area_end;
+    virt_kernel_area_end += PAGE_SIZE * n_pages;
+    ASSERT(virt_kernel_area_end <= VIRT_DEMAND_AREA);
+
+    return (unsigned long)to_virt(addr);
+}
+
+static paddr_t alloc_new_page(void)
+{
+    unsigned long page;
+
+    page = alloc_page();
+    if (!page)
+        BUG();
+    memset((void *)page, 0, PAGE_SIZE);
+    dsb(ishst);
+    return to_phys(page);
+}
+
+unsigned long map_frame_virt(unsigned long mfn)
+{
+    unsigned long addr;
+
+    addr = alloc_virt_kernel(1);
+    build_pagetable(addr, mfn, 1, MEM_DEF_ATTR,
+                    init_pagetable_ok? alloc_new_page: early_alloc_page, 3);
+
+    return addr;
+}
 #else
 void arch_mm_preinit(void *dtb_pointer)
 {
@@ -261,6 +295,10 @@ void init_pagetable(unsigned long *start_pfn, unsigned long base,
 {
 }
 
+unsigned long map_frame_virt(unsigned long mfn)
+{
+    return mfn_to_virt(mfn);
+}
 #endif
 
 void arch_init_mm(unsigned long *start_pfn_p, unsigned long *max_pfn_p)
@@ -402,9 +440,4 @@ grant_entry_v1_t *arch_init_gnttab(int nr_grant_frames)
     }
 
     return to_virt(gnttab_table);
-}
-
-unsigned long map_frame_virt(unsigned long mfn)
-{
-    return mfn_to_virt(mfn);
 }
