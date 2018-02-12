@@ -210,6 +210,7 @@ static void blk_write_sector(uint64_t sector)
 }
 #endif
 
+unsigned long gmem_base;
 static void blkfront_thread(void *p)
 {
     time_t lasttime = 0;
@@ -239,7 +240,7 @@ static void blkfront_thread(void *p)
         blk_read_sector(blk_info.sectors-1);
     }
 
-    while (!do_shutdown && c++ < 2999) {
+    while (!do_shutdown && c++ < 999) {
         uint64_t sector = rand() % blk_info.sectors;
         struct timeval tv;
 #ifdef BLKTEST_WRITE
@@ -267,6 +268,24 @@ static void blkfront_thread(void *p)
 #endif
     }
     up(&blk_sem);
+
+    {
+	    unsigned long first_mfn = (gmem_base + (4 << 20)) >> 12;
+	    void *mem = map_frames_ex(&first_mfn, 4, 0, 1, 1, DOMID_IO, NULL, 0);
+	    char *p = (char *)mem;
+	    int i;
+
+	    for (i = 0; i < 10; i++)
+		    p[i] = 3;
+
+	    for (i = 0; i < 10; i++)
+		    printk("[%s] mem: %p, val:%d: (%d)\n", __func__, mem, i, p[i]);
+
+	    unmap_frames((unsigned long)mem, 4);
+
+
+
+    }
 }
 #endif
 

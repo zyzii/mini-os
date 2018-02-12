@@ -394,6 +394,7 @@ int unmap_frames(unsigned long va, unsigned long num_frames)
     return 0;
 }
 
+extern unsigned long gmem_base;
 void arch_init_mm(unsigned long *start_pfn_p, unsigned long *max_pfn_p)
 {
     int memory;
@@ -434,7 +435,7 @@ void arch_init_mm(unsigned long *start_pfn_p, unsigned long *max_pfn_p)
     }
 
     end = (uintptr_t) &_end;
-    mem_base = fdt64_to_cpu(regs[0]);
+    gmem_base = mem_base = fdt64_to_cpu(regs[0]);
     mem_size = fdt64_to_cpu(regs[1]);
 
     BUG_ON(mem_size < MIN_MEM_SIZE);
