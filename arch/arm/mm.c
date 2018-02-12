@@ -322,6 +322,73 @@ void *ioremap(paddr_t paddr, unsigned long size)
     return (void*)addr;
 }
 
+void *map_frames_ex(const unsigned long *f, unsigned long n, unsigned long stride,
+                    unsigned long increment, unsigned long alignment, domid_t id,
+                    int *err, unsigned long prot)
+{
+    unsigned long addr, va;
+    unsigned long done = 0;
+    unsigned long mfn;
+    int ret;
+
+    if (!f)
+        return NULL;
+
+    addr = allocate_ondemand(n, alignment);
+    if (!addr)
+        return NULL;
+
+    va = addr;
+
+    while (done < n) {
+        mfn = f[done * stride] + done * increment;
+        ret = build_pagetable(va, mfn, 1, prot, alloc_new_page, 3);
+        if (ret)
+            return NULL;
+        done++;
+        va += PAGE_SIZE;
+    }
+
+    return (void *)addr;
+}
+
+static lpae_t *get_ptep(unsigned long vaddr)
+{
+    lpae_t *pgd, *pud, *pmd, *pte;
+
+    pgd = &boot_l0_pgtable[l0_pgt_idx(vaddr)];
+    ASSERT((*pgd) != L0_INVAL);
+
+    pud = (lpae_t *)to_virt((*pgd) & ~ATTR_MASK_L) + l1_pgt_idx(vaddr);
+    ASSERT((*pud) != L0_INVAL);
+
+    pmd = (lpae_t *)to_virt((*pud) & ~ATTR_MASK_L) + l2_pgt_idx(vaddr);
+    ASSERT((*pmd) != L0_INVAL);
+
+    pte = (lpae_t *)to_virt((*pmd) & ~ATTR_MASK_L) + l3_pgt_idx(vaddr);
+    ASSERT((*pte) != L0_INVAL);
+
+    return pte;
+}
+
+int unmap_frames(unsigned long va, unsigned long num_frames)
+{
+    lpae_t *pte;
+
+    ASSERT(!((unsigned long)va & ~PAGE_MASK));
+
+    while (num_frames) {
+        pte = get_ptep(va);
+	*pte = (lpae_t)0;
+
+        flush_tlb_page(va);
+
+        va += PAGE_SIZE;
+        num_frames--;
+    }
+    return 0;
+}
+
 #else
 void arch_mm_preinit(void *dtb_pointer)
 {
