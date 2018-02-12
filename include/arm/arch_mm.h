@@ -42,4 +42,8 @@ void arch_mm_preinit(void *dtb_pointer);
 #define map_frames(f, n) (NULL)
 
 void *ioremap(paddr_t addr, unsigned long size);
+
+extern unsigned long mfn_zero;
+#define map_zero(n, a) map_frames_ex(&mfn_zero, n, 0, 0, a, DOMID_SELF, NULL, MEM_RO_ATTR)
+
 #endif

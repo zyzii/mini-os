@@ -27,6 +27,22 @@ static inline void local_irq_enable(void)
     __asm__ __volatile__("mrs %0, daif":"=r"(x)::"memory"); \
 }
 
+/* Flush a page in innershareable doman */
+static inline void flush_tlb_page(unsigned long va)
+{
+    unsigned long xt;
+
+    /* xt[43:0] to save VA[55:12] */
+    xt = va >> 12;
+
+    __asm__ __volatile__(
+        "dsb sy;"
+        "tlbi vale1is, %0;"
+        "dsb sy;"
+        "isb;"
+        ::"r"(xt): "memory");
+}
+
 #endif
 
 /* The Callee-saved registers : x19 ~ x29 */
