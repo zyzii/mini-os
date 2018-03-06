@@ -14,6 +14,25 @@ typedef uint64_t paddr_t;
 #define VIRT_KERNEL_AREA        ((unsigned long)to_virt(MAX_MEM_SIZE))
 #define VIRT_DEMAND_AREA        (VIRT_KERNEL_AREA + MAX_MEM_SIZE)
 #define VIRT_HEAP_AREA          (VIRT_DEMAND_AREA + MAX_MEM_SIZE)
+
+/*
+ * The virtual address layout for arm64(48bit):
+ *
+ *      --------------------------------------------------------------------------
+ *     |                                                                          |
+ *      --------------------------------------------------------------------------
+ *     ^                   ^                   ^                 ^                ^
+ *     |<-- memory area -->|<-- kernel area -->|<- demand area ->|<- heap area -> |
+ *     ^
+ *     ^
+ *     |
+ * (0xffff000000000000, when TCR.T0SZ == 16)
+ *
+ * memory area (0xffff000000000000 ~ VIRT_KERNEL_AREA)   : used for linear physical memory mapping
+ * kernel area (VIRT_KERNEL_AREA   ~ VIRT_DEMAND_AREA)   : used for map_frame_virt
+ * demand area (VIRT_DEMAND_AREA   ~ VIRT_HEAP_AREA)     : used for ioremap
+ * heap area   (VIRT_HEAP_AREA     ~ 0xffffffffffffffff) : used for heap
+ */
 #endif
 
 typedef uint64_t lpae_t;
