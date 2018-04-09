@@ -46,7 +46,6 @@
 #include <mini-os/xmalloc.h>
 
 
-static start_info_t *start_info_ptr;
 
 #ifdef CONFIG_XENBUS
 static const char *path = "control/shutdown";
@@ -111,9 +110,15 @@ static void shutdown_thread(void *p)
     }
 }
 
-void init_shutdown(start_info_t *si)
+#ifdef XEN_HAVE_PV_GUEST_ENTRY
+static start_info_t *start_info_ptr;
+#endif
+
+void init_shutdown(void *si)
 {
-    start_info_ptr = si;
+#ifdef XEN_HAVE_PV_GUEST_ENTRY
+    start_info_ptr = (start_info_t *)si;
+#endif
 
     end_shutdown_thread = 0;
     create_thread("shutdown", shutdown_thread, NULL);
@@ -131,8 +136,8 @@ void fini_shutdown(void)
         do_exit();
     }
 }
-#endif
 
+#ifdef XEN_HAVE_PV_GUEST_ENTRY
 void kernel_suspend(void)
 {
     int rc;
@@ -157,3 +162,10 @@ void kernel_suspend(void)
         printk("MiniOS resumed from suspend!\n");
     }
 }
+#else
+void kernel_suspend(void)
+{
+}
+#endif
+
+#endif

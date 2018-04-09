@@ -107,7 +107,7 @@ void start_kernel(void* par)
 
 #ifdef CONFIG_XENBUS
     /* Init shutdown thread */
-    init_shutdown((start_info_t *)par);
+    init_shutdown(par);
 #endif
 
     /* Call (possibly overridden) app_main() */

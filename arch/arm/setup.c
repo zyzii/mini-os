@@ -48,7 +48,7 @@ void arch_init(void *dtb_pointer, paddr_t physical_offset)
 
     gic_init();
 
-    start_kernel();
+    start_kernel(NULL);
 }
 
 void
