@@ -534,3 +534,10 @@ grant_entry_v1_t *arch_init_gnttab(int nr_grant_frames)
 
     return map_frames(frames, nr_grant_frames);
 }
+
+void arch_suspend_gnttab(grant_entry_v1_t *gnttab_table, int nr_grant_frames)
+{
+}
+void arch_resume_gnttab(grant_entry_v1_t *gnttab_table, int nr_grant_frames)
+{
+}
